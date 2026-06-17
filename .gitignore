@@ -35,6 +35,7 @@ src/seedao-api-server.exe
 # Runtime data
 /logs/
 /data/
+/backups/
 
 # Large import data (regenerate via scripts)
 src/migrations/data/sns_chain_registry_import.sql

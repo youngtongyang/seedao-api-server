@@ -339,6 +339,8 @@ docker compose -f docker-compose.prod.yml up -d
 # 更新：bash deploy/pull-deploy.sh
 ```
 
+**阿里云 ECS 生产部署完整步骤**见 [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) 第一章「服务器生产部署」。
+
 ---
 
 ## 单元测试
