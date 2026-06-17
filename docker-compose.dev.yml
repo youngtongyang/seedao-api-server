@@ -52,7 +52,7 @@ services:
 
   api-server:
     build: .
-    image: ghcr.io/seedao/seedao-api-server:dev
+    image: ghcr.io/seedao-polis/seedao-api-server:dev
     container_name: seedao-api-server-dev
     restart: unless-stopped
     ports:

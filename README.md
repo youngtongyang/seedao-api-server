@@ -333,10 +333,10 @@ cp src/config/config.dev.example.yaml src/config/config.dev.yaml
 # 编辑 config.dev.yaml，填写 redis.password 等配置
 docker compose -f docker-compose.dev.yml up -d --build
 
-# 生产环境（redis + api，DB 外部）
+# 生产环境（从 GHCR 拉镜像，需先 docker login ghcr.io）
 cp src/config/config.prod.example.yaml src/config/config.prod.yaml
-# 编辑 config.prod.yaml，填写 redis.password 等配置
-docker compose -f docker-compose.prod.yml up -d --build
+docker compose -f docker-compose.prod.yml up -d
+# 更新：bash deploy/pull-deploy.sh
 ```
 
 ---
