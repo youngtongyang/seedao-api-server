@@ -1,5 +1,6 @@
 # 生产环境配置（docker-compose.prod.yml）
-# 复制：cp config.prod.example.yaml config.prod.yaml
+# ECS：复制到 服务器上的生产配置文件（不在本仓库）
+# 模板：cp config.prod.example.yaml 服务器上的生产配置文件（不在本仓库）
 # 生产环境务必填写真实密钥，且 dev_mode 设为 false
 
 server:
