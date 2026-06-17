@@ -1,12 +1,12 @@
 # API 本地测试手册
 
-本文档汇总 SeeDAO API 本地联调用的 `curl` 命令，便于在 Git Bash 中复制执行。
+本文档汇总 SeeDAO API 本地联调用的 `curl` 命令，便于在终端（bash/zsh）中复制执行。
 
 **前提：**
 
 - API 已启动：`bash src/scripts/start-local.sh` 或 `go run ./cmd/server`
 - 默认地址：`http://127.0.0.1:8080`
-- 终端：Git Bash（Windows 下可直接用 `curl`）
+- 需已安装 `curl`（macOS / Linux 通常自带；Windows 可用 Git Bash 或 `curl.exe`）
 
 **测试变量（执行前替换）：**
 

@@ -51,7 +51,6 @@ cd src/config
 cp config.local.example.yaml config.local.yaml
 ```
 
-详细部署步骤见 **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)**。  
 本地联调 curl 命令见 **[docs/API_TEST.md](docs/API_TEST.md)**。
 
 | 配置项 | 说明 |
@@ -339,8 +338,6 @@ cp src/config/config.prod.example.yaml src/config/config.prod.yaml
 # 编辑 config.prod.yaml，填写 redis.password 等配置
 docker compose -f docker-compose.prod.yml up -d --build
 ```
-
-详见 [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)。
 
 ---
 
