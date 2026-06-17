@@ -1,0 +1,30 @@
+# 开发/测试环境配置（docker-compose.dev.yml）
+# 复制：cp config.dev.example.yaml config.dev.yaml
+
+server:
+  addr: ":8080"
+  debug: true
+
+database:
+  # docker-compose.dev 内 PostgreSQL 服务名 postgres
+  dsn: "postgres://seedao:seedao@postgres:5432/seedao_api?sslmode=disable"
+
+redis:
+  addr: "redis:6379"
+  password: "CHANGE_ME_REDIS_PASSWORD"
+  db: 0
+
+jwt:
+  secret: "dev-jwt-secret-change-me"
+  exp_hours: 168
+
+aliyun_sms:
+  # dev 环境真实发送短信，必须填写有效阿里云凭证
+  access_key_id: "your-dev-access-key-id"
+  access_key_secret: "your-dev-access-key-secret"
+  sign_name: "SeeDAO"
+  template_code: "SMS_XXXXXX"
+  dev_mode: false
+
+siwe:
+  chain_id: 1

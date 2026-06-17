@@ -1,0 +1,75 @@
+# 开发环境：PostgreSQL + Redis + API（全容器化）
+# 使用配置：src/config/config.dev.yaml
+# Redis 密码仅从 config.dev.yaml 的 redis.password 读取（API 与 Redis 容器共用）
+#
+# 启动：
+#   cp src/config/config.dev.example.yaml src/config/config.dev.yaml
+#   docker compose -f docker-compose.dev.yml up -d --build
+#
+# 初始化数据库（首次）：
+#   PGSUPERPASSWORD=seedao bash src/scripts/setup-db.sh
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: seedao-postgres-dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: seedao
+      POSTGRES_PASSWORD: seedao
+      POSTGRES_DB: seedao_api
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./data/dev/postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U seedao -d seedao_api"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - seedao-dev
+
+  redis:
+    image: redis:7-alpine
+    container_name: seedao-redis-dev
+    restart: unless-stopped
+    entrypoint: ["sh", "/redis-entrypoint.sh"]
+    volumes:
+      - ./deploy/redis/entrypoint.sh:/redis-entrypoint.sh:ro
+      - ./deploy/redis/healthcheck.sh:/redis-healthcheck.sh:ro
+      - ./src/config/config.dev.yaml:/app-config.yaml:ro
+      - ./data/dev/redis:/data
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "sh", "/redis-healthcheck.sh"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks:
+      - seedao-dev
+
+  api-server:
+    build: .
+    image: ghcr.io/seedao/seedao-api-server:dev
+    container_name: seedao-api-server-dev
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./src/config/config.dev.yaml:/app/config/config.yaml:ro
+      - ./logs/dev:/app/logs:rw
+    environment:
+      CONFIG_PATH: /app/config/config.yaml
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - seedao-dev
+
+networks:
+  seedao-dev:
+    driver: bridge
