@@ -2,9 +2,11 @@ package service
 
 import (
 	"context"
+	"errors"
+	"strings"
 	"time"
 
-	"github.com/google/uuid"
+	siwe "github.com/spruceid/siwe-go"
 	"github.com/seedao/seedao-api-server/internal/config"
 	"github.com/seedao/seedao-api-server/internal/pkg/phone"
 	"github.com/seedao/seedao-api-server/internal/pkg/redisstore"
@@ -33,8 +35,12 @@ func (s *WalletService) CreateNonce(ctx context.Context, walletAddr, domain stri
 	if walletAddr == "" {
 		return nil, ErrInvalidParam
 	}
+	domain = strings.TrimSpace(domain)
+	if domain == "" {
+		return nil, ErrWalletDomainRequired
+	}
 
-	nonce := uuid.New().String()
+	nonce := siwe.GenerateNonce()
 	expiresAt := time.Now().Add(walletNonceTTL)
 
 	message, err := siweutil.BuildMessage(domain, walletAddr, nonce, s.chainID, time.Now())
@@ -67,26 +73,38 @@ type VerifySNSResult struct {
 	Claimable bool   `json:"claimable"`
 }
 
-func (s *WalletService) VerifySNS(ctx context.Context, sns *SNSService, input VerifySNSInput) (*VerifySNSResult, error) {
+func (s *WalletService) VerifyWalletSignature(ctx context.Context, input VerifySNSInput) error {
 	walletAddr := phone.NormalizeWallet(input.Wallet)
+	if walletAddr == "" {
+		return ErrInvalidParam
+	}
 
 	storedNonce, err := s.redis.GetWalletNonce(ctx, walletAddr)
 	if err != nil {
-		return nil, ErrWalletVerifyFailed
+		return ErrWalletNonceMissing
 	}
 
 	_, err = siweutil.Verify(siweutil.VerifyInput{
 		Wallet:    walletAddr,
-		Domain:    input.Domain,
+		Domain:    strings.TrimSpace(input.Domain),
 		Message:   input.Message,
 		Signature: input.Signature,
 		Nonce:     storedNonce,
 	})
 	if err != nil {
-		return nil, ErrWalletVerifyFailed
+		return mapSIWEVerifyError(err)
 	}
 
 	_ = s.redis.DeleteWalletNonce(ctx, walletAddr)
+	return nil
+}
+
+func (s *WalletService) VerifySNS(ctx context.Context, sns *SNSService, input VerifySNSInput) (*VerifySNSResult, error) {
+	walletAddr := phone.NormalizeWallet(input.Wallet)
+
+	if err := s.VerifyWalletSignature(ctx, input); err != nil {
+		return nil, err
+	}
 
 	registry, err := sns.getRegistryByWallet(walletAddr)
 	if err != nil {
@@ -101,4 +119,19 @@ func (s *WalletService) VerifySNS(ctx context.Context, sns *SNSService, input Ve
 		SNSName:   registry.SNSName,
 		Claimable: true,
 	}, nil
+}
+
+func mapSIWEVerifyError(err error) error {
+	switch {
+	case errors.Is(err, siweutil.ErrDomainMismatch):
+		return ErrWalletDomainMismatch
+	case errors.Is(err, siweutil.ErrParseMessage):
+		return ErrWalletMessageInvalid
+	case errors.Is(err, siweutil.ErrWalletMismatch):
+		return ErrWalletAddressMismatch
+	case errors.Is(err, siweutil.ErrSignatureInvalid):
+		return ErrWalletSignatureInvalid
+	default:
+		return ErrWalletVerifyFailed
+	}
 }

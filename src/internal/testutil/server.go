@@ -126,6 +126,7 @@ func DoJSON(t *testing.T, e *echo.Echo, method, path string, body interface{}, h
 type APIResponse struct {
 	Code    int             `json:"code"`
 	Message string          `json:"message"`
+	Detail  string          `json:"detail"`
 	Data    json.RawMessage `json:"data"`
 }
 
@@ -134,6 +135,14 @@ func ParseResponse(t *testing.T, rec *httptest.ResponseRecorder) APIResponse {
 	require.Equal(t, http.StatusOK, rec.Code, rec.Body.String())
 	var resp APIResponse
 	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
+	return resp
+}
+
+func ParseErrorResponse(t *testing.T, rec *httptest.ResponseRecorder) APIResponse {
+	t.Helper()
+	var resp APIResponse
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
+	require.NotEmpty(t, resp.Message)
 	return resp
 }
 

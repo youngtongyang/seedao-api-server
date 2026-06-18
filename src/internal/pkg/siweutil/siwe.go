@@ -1,7 +1,6 @@
 package siweutil
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
@@ -24,11 +23,11 @@ type VerifyResult struct {
 func Verify(input VerifyInput) (*VerifyResult, error) {
 	msg, err := siwe.ParseMessage(input.Message)
 	if err != nil {
-		return nil, fmt.Errorf("parse siwe message: %w", err)
+		return nil, ErrParseMessage
 	}
 
 	if !strings.EqualFold(msg.GetDomain(), input.Domain) {
-		return nil, fmt.Errorf("domain mismatch")
+		return nil, ErrDomainMismatch
 	}
 
 	domain := input.Domain
@@ -39,12 +38,12 @@ func Verify(input VerifyInput) (*VerifyResult, error) {
 
 	pubKey, err := msg.Verify(input.Signature, &domain, noncePtr, nil)
 	if err != nil {
-		return nil, fmt.Errorf("verify signature: %w", err)
+		return nil, ErrSignatureInvalid
 	}
 
 	addr := crypto.PubkeyToAddress(*pubKey)
 	if !strings.EqualFold(addr.Hex(), input.Wallet) {
-		return nil, fmt.Errorf("wallet address mismatch")
+		return nil, ErrWalletMismatch
 	}
 
 	return &VerifyResult{Address: strings.ToLower(addr.Hex())}, nil

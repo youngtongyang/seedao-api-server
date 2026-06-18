@@ -15,15 +15,27 @@ import (
 func mapServiceError(c echo.Context, err error) error {
 	switch {
 	case errors.Is(err, service.ErrInvalidParam):
-		return response.Fail(c, http.StatusBadRequest, errcode.InvalidParam)
+		return failWithReason(c, http.StatusBadRequest, errcode.InvalidParam, service.ReasonInvalidRequestBody)
+	case errors.Is(err, service.ErrWalletDomainRequired):
+		return failWithReason(c, http.StatusBadRequest, errcode.InvalidParam, service.ReasonDomainRequired)
 	case errors.Is(err, service.ErrInvalidSMSCode):
 		return response.Fail(c, http.StatusBadRequest, errcode.InvalidSMSCode)
 	case errors.Is(err, service.ErrSNSUnavailable):
 		return response.Fail(c, http.StatusBadRequest, errcode.SNSUnavailable)
+	case errors.Is(err, service.ErrWalletNonceMissing):
+		return failWithReason(c, http.StatusBadRequest, errcode.WalletVerifyFailed, service.ReasonNonceExpiredOrMissing)
+	case errors.Is(err, service.ErrWalletDomainMismatch):
+		return failWithReason(c, http.StatusBadRequest, errcode.WalletVerifyFailed, service.ReasonDomainMismatch)
+	case errors.Is(err, service.ErrWalletMessageInvalid):
+		return failWithReason(c, http.StatusBadRequest, errcode.WalletVerifyFailed, service.ReasonSIWEMessageInvalid)
+	case errors.Is(err, service.ErrWalletSignatureInvalid):
+		return failWithReason(c, http.StatusBadRequest, errcode.WalletVerifyFailed, service.ReasonSignatureInvalid)
+	case errors.Is(err, service.ErrWalletAddressMismatch):
+		return failWithReason(c, http.StatusBadRequest, errcode.WalletVerifyFailed, service.ReasonWalletAddressMismatch)
 	case errors.Is(err, service.ErrWalletVerifyFailed):
-		return response.Fail(c, http.StatusBadRequest, errcode.WalletVerifyFailed)
+		return failWithReason(c, http.StatusBadRequest, errcode.WalletVerifyFailed, service.ReasonSignatureInvalid)
 	case errors.Is(err, service.ErrWalletNoSNS):
-		return response.Fail(c, http.StatusBadRequest, errcode.WalletNoSNS)
+		return failWithReason(c, http.StatusBadRequest, errcode.WalletNoSNS, service.ReasonWalletNotInRegistry)
 	case errors.Is(err, service.ErrPhoneAlreadyExists):
 		return response.Fail(c, http.StatusBadRequest, errcode.PhoneAlreadyExists)
 	case errors.Is(err, service.ErrTooManyRequests):
@@ -37,4 +49,8 @@ func mapServiceError(c echo.Context, err error) error {
 		}
 		return response.Fail(c, http.StatusInternalServerError, errcode.InternalError)
 	}
+}
+
+func failWithReason(c echo.Context, httpStatus, code int, reason string) error {
+	return response.FailWithDetail(c, httpStatus, code, reason)
 }

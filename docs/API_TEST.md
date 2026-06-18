@@ -288,7 +288,18 @@ curl -X POST http://127.0.0.1:8080/v1/auth/login \
 | 40001 | 参数错误 |
 | 40002 | 验证码错误/过期 |
 | 40003 | SNS 名称不可用 |
-| 40004 | 钱包验签失败 |
+| 40004 | 钱包验签失败 | 见响应 `detail` |
+| 40005 | 钱包无可认领 SNS | `detail`: `wallet_not_in_registry` |
+
+钱包验签失败时 `detail` 取值：
+
+| detail | 含义 |
+|--------|------|
+| `nonce_expired_or_missing` | 未先调 nonce，或 nonce 已过期（45 秒） |
+| `domain_mismatch` | verify 的 domain 与 message 内不一致 |
+| `siwe_message_invalid` | message 格式无法解析 |
+| `signature_invalid` | 签名无效或与 message 不匹配 |
+| `wallet_address_mismatch` | 签名地址与 wallet 不一致 |
 | 40005 | 钱包无存量 SNS |
 | 40006 | 手机号已注册 |
 | 42901 | 发送过于频繁 |

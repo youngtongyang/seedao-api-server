@@ -9,7 +9,6 @@ import (
 	"github.com/seedao/seedao-api-server/internal/model"
 	"github.com/seedao/seedao-api-server/internal/pkg/jwtutil"
 	"github.com/seedao/seedao-api-server/internal/pkg/phone"
-	"github.com/seedao/seedao-api-server/internal/pkg/siweutil"
 	"github.com/seedao/seedao-api-server/internal/pkg/snsutil"
 )
 
@@ -160,22 +159,14 @@ func (s *AuthService) RegisterExistingSNS(ctx context.Context, input RegisterExi
 
 	walletAddr := phone.NormalizeWallet(input.Wallet)
 
-	storedNonce, err := s.wallet.redis.GetWalletNonce(ctx, walletAddr)
-	if err != nil {
-		return nil, ErrWalletVerifyFailed
-	}
-
-	_, err = siweutil.Verify(siweutil.VerifyInput{
-		Wallet:    walletAddr,
+	if err := s.wallet.VerifyWalletSignature(ctx, VerifySNSInput{
+		Wallet:    input.Wallet,
 		Domain:    input.Domain,
 		Message:   input.Message,
 		Signature: input.Signature,
-		Nonce:     storedNonce,
-	})
-	if err != nil {
-		return nil, ErrWalletVerifyFailed
+	}); err != nil {
+		return nil, err
 	}
-	_ = s.wallet.redis.DeleteWalletNonce(ctx, walletAddr)
 
 	now := time.Now()
 	var user model.User
