@@ -58,6 +58,15 @@ func NewTestServer(t *testing.T) *TestServer {
 			DevMode:      true,
 		},
 		SIWE: config.SIWEConfig{ChainID: 1},
+		WechatPay: config.WechatPayConfig{
+			DevMode:            true,
+			H5WapName:          "SeeDAO",
+			H5WapURL:           "https://app.seedao.top",
+			H5ReturnURL:        "https://app.seedao.top/pay/result",
+			MembershipPriceFen: 9900,
+			OrderExpireMinutes: 15,
+			Description:        "SeeDAO 会员续费",
+		},
 	}
 
 	redis := redisstore.New(cfg.Redis)

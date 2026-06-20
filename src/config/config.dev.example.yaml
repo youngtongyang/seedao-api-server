@@ -28,3 +28,13 @@ aliyun_sms:
 
 siwe:
   chain_id: 1
+
+wechat_pay:
+  dev_mode: true
+  notify_url: "https://dev-api.example.com/v1/payments/wechat/notify"
+  h5_wap_name: "SeeDAO"
+  h5_wap_url: "https://dev-app.seedao.top"
+  h5_return_url: "https://dev-app.seedao.top/pay/result"
+  membership_price_fen: 9900
+  order_expire_minutes: 15
+  description: "SeeDAO 会员续费"

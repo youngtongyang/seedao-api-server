@@ -241,7 +241,218 @@ curl -X POST http://127.0.0.1:8080/v1/auth/register \
 
 ---
 
-## 七、推荐测试流程（新用户）
+## 七、会员微信支付（需 JWT）
+
+支持两种支付渠道，通过创建订单时的 `pay_channel` 区分：
+
+| pay_channel | 适用场景 | 前端行为 |
+|-------------|----------|----------|
+| `wechat_native`（默认） | PC 网页 | 用 `code_url` 渲染二维码，用户微信扫码 |
+| `wechat_h5` | 手机 PWA / 移动浏览器 | 跳转 `h5_url`，唤起微信 App 支付 |
+
+本地默认 `wechat_pay.dev_mode: true`（未配置商户号时自动开启），可用模拟支付接口联调；生产环境需配置真实微信商户参数并将 `dev_mode` 设为 `false`。
+
+**测试变量补充：**
+
+| 变量 | 说明 |
+|------|------|
+| `ORDER_NO` | 创建订单返回的 `order_no` |
+
+**价格说明：** 默认年费 `9900` 分（99 元），由服务端 `wechat_pay.membership_price_fen` 配置，前端不传金额。
+
+**前端选渠道示例：**
+
+```javascript
+const payChannel = /Mobile|Android|iPhone/i.test(navigator.userAgent)
+  ? 'wechat_h5'
+  : 'wechat_native'
+```
+
+### 13. 创建支付订单
+
+用户点击「立即续费」后调用。
+
+#### 13a. PC 扫码（Native，默认）
+
+```bash
+curl -X POST http://127.0.0.1:8080/v1/payments/orders \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <TOKEN>" \
+  -d '{
+    "product_type": "membership_renew",
+    "days": 365,
+    "pay_channel": "wechat_native"
+  }'
+```
+
+`pay_channel` 可省略，默认 `wechat_native`。
+
+成功预期：
+
+```json
+{
+  "code": 0,
+  "data": {
+    "order_no": "M202606201430001234",
+    "product_type": "membership_renew",
+    "product_days": 365,
+    "pay_channel": "wechat_native",
+    "amount": 9900,
+    "currency": "CNY",
+    "status": "pending",
+    "code_url": "weixin://wxpay/bizpayurl?pr=xxxxx",
+    "expired_at": "2026-06-20T14:45:00Z"
+  }
+}
+```
+
+前端用 `code_url` 本地生成二维码图片展示。
+
+#### 13b. 手机 H5（PWA / 移动浏览器）
+
+```bash
+curl -X POST http://127.0.0.1:8080/v1/payments/orders \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <TOKEN>" \
+  -d '{
+    "product_type": "membership_renew",
+    "pay_channel": "wechat_h5"
+  }'
+```
+
+成功预期：
+
+```json
+{
+  "code": 0,
+  "data": {
+    "order_no": "M202606201430001234",
+    "pay_channel": "wechat_h5",
+    "amount": 9900,
+    "status": "pending",
+    "h5_url": "https://wx.tenpay.com/cgi-bin/mmpayweb-bin/checkmweb?...",
+    "expired_at": "2026-06-20T14:45:00Z"
+  }
+}
+```
+
+前端收到 `h5_url` 后直接 `window.location.href = h5_url` 跳转；支付完成后微信会跳回 `h5_return_url`（服务端配置），同时前端应继续轮询订单状态确认支付结果。
+
+> H5 下单时服务端会自动读取请求来源 IP（`ClientIP`），无需前端传递。
+
+`days` 可省略，默认 `365`。非 365 天时金额按年费比例折算。
+
+### 14. 查询订单状态（前端轮询）
+
+```bash
+curl http://127.0.0.1:8080/v1/payments/orders/<ORDER_NO> \
+  -H "Authorization: Bearer <TOKEN>"
+```
+
+`status=pending` 时响应仍包含 `code_url`（Native）或 `h5_url`（H5），便于用户刷新页面后继续支付。
+
+支付成功后 `status=paid`，并返回 `membership_expires_at`、`paid_at`、`wx_transaction_id`。
+
+### 15. 订单列表
+
+```bash
+curl "http://127.0.0.1:8080/v1/payments/orders?limit=20" \
+  -H "Authorization: Bearer <TOKEN>"
+```
+
+### 16. 关闭未支付订单
+
+用户取消或二维码过期时：
+
+```bash
+curl -X POST http://127.0.0.1:8080/v1/payments/orders/<ORDER_NO>/close \
+  -H "Authorization: Bearer <TOKEN>"
+```
+
+### 17. 微信支付回调（微信服务器调用，无需 JWT）
+
+```
+POST https://<你的API域名>/v1/payments/wechat/notify
+```
+
+由微信在用户支付成功后异步通知。需公网 HTTPS，并在商户平台配置相同地址。验签通过后自动延长会员。
+
+本地开发可用 ngrok 等暴露该路径；`dev_mode` 下不会收到真实微信回调。
+
+### 18. 模拟支付（仅 dev_mode）
+
+本地联调用，模拟微信回调完成支付：
+
+```bash
+curl -X POST http://127.0.0.1:8080/v1/payments/dev/simulate-pay \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <TOKEN>" \
+  -d '{"order_no":"<ORDER_NO>"}'
+```
+
+成功预期：`status=paid`，并返回更新后的 `membership_expires_at`。
+
+### 会员续费完整联调流程（dev_mode，PC Native）
+
+```bash
+# Step 1: 登录获取 TOKEN（见上文注册/登录流程）
+
+# Step 2: 创建 Native 订单
+curl -X POST http://127.0.0.1:8080/v1/payments/orders \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <TOKEN>" \
+  -d '{"product_type":"membership_renew","pay_channel":"wechat_native"}'
+
+# Step 3: 前端用 code_url 展示二维码；本地可直接模拟支付
+curl -X POST http://127.0.0.1:8080/v1/payments/dev/simulate-pay \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <TOKEN>" \
+  -d '{"order_no":"<ORDER_NO>"}'
+
+# Step 4: 确认订单与会员到期时间
+curl http://127.0.0.1:8080/v1/payments/orders/<ORDER_NO> \
+  -H "Authorization: Bearer <TOKEN>"
+
+curl http://127.0.0.1:8080/v1/user/profile \
+  -H "Authorization: Bearer <TOKEN>"
+```
+
+### 会员续费完整联调流程（dev_mode，手机 H5）
+
+```bash
+# Step 1: 登录获取 TOKEN
+
+# Step 2: 创建 H5 订单
+curl -X POST http://127.0.0.1:8080/v1/payments/orders \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <TOKEN>" \
+  -d '{"product_type":"membership_renew","pay_channel":"wechat_h5"}'
+
+# Step 3: 前端跳转 h5_url；本地 dev_mode 可直接 simulate-pay
+curl -X POST http://127.0.0.1:8080/v1/payments/dev/simulate-pay \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <TOKEN>" \
+  -d '{"order_no":"<ORDER_NO>"}'
+
+# Step 4: 轮询确认支付结果
+curl http://127.0.0.1:8080/v1/payments/orders/<ORDER_NO> \
+  -H "Authorization: Bearer <TOKEN>"
+```
+
+**生产环境 H5 额外配置（`config.prod.yaml`）：**
+
+```yaml
+wechat_pay:
+  h5_wap_name: "SeeDAO"
+  h5_wap_url: "https://app.seedao.top"          # 须与微信商户平台 H5 支付域名一致
+  h5_return_url: "https://app.seedao.top/pay/result"  # 付完跳回的 PWA 页面
+```
+
+商户平台还需：**开通 H5 支付** + **配置 H5 支付域名**（需 ICP 备案）。
+
+---
+
+## 八、推荐测试流程（新用户）
 
 按顺序执行，避免验证码被提前消耗：
 
@@ -280,7 +491,7 @@ curl -X POST http://127.0.0.1:8080/v1/auth/login \
 
 ---
 
-## 八、错误码速查
+## 九、错误码速查
 
 | code | 含义 |
 |------|------|
@@ -302,14 +513,17 @@ curl -X POST http://127.0.0.1:8080/v1/auth/login \
 | `wallet_address_mismatch` | 签名地址与 wallet 不一致 |
 | 40005 | 钱包无存量 SNS |
 | 40006 | 手机号已注册 |
+| 40007 | 支付订单不存在或无权访问 |
+| 40008 | 支付订单状态无效（如已支付、已关闭） |
 | 42901 | 发送过于频繁 |
 | 50000 | 服务器内部错误 |
 
 ---
 
-## 九、注意事项
+## 十、注意事项
 
 1. 手机号必须带 `+86` 前缀，不能写 `13800138000`
 2. 验证码 5 分钟有效，验证成功后立即失效
 3. 钱包相关接口需真实 SIWE 签名，无法用随意字符串通过
-4. 更多接口说明见 [README.md](../README.md)
+4. 会员支付：`dev_mode` 下用 `/v1/payments/dev/simulate-pay` 联调；生产需配置微信商户参数并执行 `004_payment_orders.sql` 迁移
+5. 更多接口说明见 [README.md](../README.md)

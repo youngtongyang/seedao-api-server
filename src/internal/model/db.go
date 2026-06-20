@@ -39,5 +39,7 @@ func AutoMigrate(db *gorm.DB) error {
 		&SNSName{},
 		&SNSChainRegistry{},
 		&SMSSendLog{},
+		&PaymentOrder{},
+		&PaymentRefund{},
 	)
 }

@@ -14,6 +14,7 @@ type Config struct {
 	JWT       JWTConfig       `yaml:"jwt"`
 	AliyunSMS AliyunSMSConfig `yaml:"aliyun_sms"`
 	SIWE      SIWEConfig      `yaml:"siwe"`
+	WechatPay WechatPayConfig `yaml:"wechat_pay"`
 }
 
 type ServerConfig struct {
@@ -48,6 +49,22 @@ type SIWEConfig struct {
 	ChainID int64 `yaml:"chain_id"`
 }
 
+type WechatPayConfig struct {
+	DevMode              bool   `yaml:"dev_mode"`
+	MchID                string `yaml:"mch_id"`
+	AppID                string `yaml:"app_id"`
+	APIv3Key             string `yaml:"api_v3_key"`
+	CertSerialNo         string `yaml:"cert_serial_no"`
+	PrivateKeyPath       string `yaml:"private_key_path"`
+	NotifyURL            string `yaml:"notify_url"`
+	H5WapName            string `yaml:"h5_wap_name"`
+	H5WapURL             string `yaml:"h5_wap_url"`
+	H5ReturnURL          string `yaml:"h5_return_url"`
+	MembershipPriceFen   int64  `yaml:"membership_price_fen"`
+	OrderExpireMinutes   int    `yaml:"order_expire_minutes"`
+	Description          string `yaml:"description"`
+}
+
 func Load(path string) (*Config, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -67,6 +84,21 @@ func Load(path string) (*Config, error) {
 	}
 	if cfg.SIWE.ChainID == 0 {
 		cfg.SIWE.ChainID = 1
+	}
+	if cfg.WechatPay.MembershipPriceFen == 0 {
+		cfg.WechatPay.MembershipPriceFen = 9900
+	}
+	if cfg.WechatPay.OrderExpireMinutes == 0 {
+		cfg.WechatPay.OrderExpireMinutes = 15
+	}
+	if cfg.WechatPay.Description == "" {
+		cfg.WechatPay.Description = "SeeDAO 会员续费"
+	}
+	if cfg.WechatPay.H5WapName == "" {
+		cfg.WechatPay.H5WapName = "SeeDAO"
+	}
+	if cfg.WechatPay.MchID == "" {
+		cfg.WechatPay.DevMode = true
 	}
 	if cfg.Redis.Password == "" {
 		return nil, fmt.Errorf("redis.password is required")

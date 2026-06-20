@@ -7,8 +7,10 @@ const (
 	SNSUnavailable      = 40003
 	WalletVerifyFailed  = 40004
 	WalletNoSNS         = 40005
-	PhoneAlreadyExists  = 40006
+	PhoneAlreadyExists = 40006
 	TooManyRequests     = 42901
+	PaymentOrderNotFound = 40007
+	PaymentOrderInvalid  = 40008
 	InternalError       = 50000
 )
 
@@ -21,6 +23,8 @@ var messages = map[int]string{
 	WalletNoSNS:        "wallet has no claimable sns",
 	PhoneAlreadyExists: "phone already registered",
 	TooManyRequests:    "too many requests",
+	PaymentOrderNotFound: "payment order not found",
+	PaymentOrderInvalid:  "payment order invalid",
 	InternalError:      "internal server error",
 }
 
