@@ -25,9 +25,10 @@ func NewAuthService(db *gorm.DB, sms *SMSService, sns *SNSService, wallet *Walle
 }
 
 type AuthUser struct {
-	ID             int64  `json:"id"`
-	SNSName        string `json:"sns_name"`
-	RegisterSource string `json:"register_source"`
+	ID                  int64  `json:"id"`
+	SNSName             string `json:"sns_name"`
+	RegisterSource      string `json:"register_source"`
+	MembershipExpiresAt string `json:"membership_expires_at"`
 }
 
 type AuthResult struct {
@@ -101,14 +102,16 @@ func (s *AuthService) RegisterNewSNS(ctx context.Context, input RegisterNewSNSIn
 	}
 
 	now := time.Now()
+	membershipExpiresAt := DefaultMembershipExpiry(now)
 	var user model.User
 
 	err = s.db.Transaction(func(tx *gorm.DB) error {
 		user = model.User{
-			RegisterSource: model.RegisterSourceNewSNS,
-			Status:         model.UserStatusActive,
-			CreatedAt:      now,
-			UpdatedAt:      now,
+			RegisterSource:      model.RegisterSourceNewSNS,
+			Status:              model.UserStatusActive,
+			MembershipExpiresAt: &membershipExpiresAt,
+			CreatedAt:           now,
+			UpdatedAt:           now,
 		}
 		if err := tx.Create(&user).Error; err != nil {
 			return err
@@ -169,6 +172,7 @@ func (s *AuthService) RegisterExistingSNS(ctx context.Context, input RegisterExi
 	}
 
 	now := time.Now()
+	membershipExpiresAt := DefaultMembershipExpiry(now)
 	var user model.User
 	var snsName string
 
@@ -183,10 +187,11 @@ func (s *AuthService) RegisterExistingSNS(ctx context.Context, input RegisterExi
 		snsName = registry.SNSName
 
 		user = model.User{
-			RegisterSource: model.RegisterSourceExistingSNS,
-			Status:         model.UserStatusActive,
-			CreatedAt:      now,
-			UpdatedAt:      now,
+			RegisterSource:      model.RegisterSourceExistingSNS,
+			Status:              model.UserStatusActive,
+			MembershipExpiresAt: &membershipExpiresAt,
+			CreatedAt:           now,
+			UpdatedAt:           now,
 		}
 		if err := tx.Create(&user).Error; err != nil {
 			return err
@@ -239,9 +244,10 @@ func (s *AuthService) buildAuthResult(user *model.User) (*AuthResult, error) {
 		Token:    token,
 		TokenExp: exp,
 		User: AuthUser{
-			ID:             user.ID,
-			SNSName:        snsName,
-			RegisterSource: user.RegisterSource,
+			ID:                  user.ID,
+			SNSName:             snsName,
+			RegisterSource:      user.RegisterSource,
+			MembershipExpiresAt: formatMembershipExpiry(user.MembershipExpiresAt),
 		},
 	}, nil
 }

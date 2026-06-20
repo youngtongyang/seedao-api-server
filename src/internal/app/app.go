@@ -27,11 +27,15 @@ func NewEcho(cfg *config.Config, db *gorm.DB, redis *redisstore.Store) (*echo.Ec
 	walletSvc := service.NewWalletService(redis, cfg.SIWE)
 	authSvc := service.NewAuthService(db, smsSvc, snsSvc, walletSvc, jwtMgr)
 	profileSvc := service.NewProfileService(db)
+	statsSvc := service.NewStatsService(db)
+	membershipSvc := service.NewMembershipService(db)
 
 	authHandler := handler.NewAuthHandler(authSvc, smsSvc)
 	snsHandler := handler.NewSNSHandler(snsSvc)
 	walletHandler := handler.NewWalletHandler(walletSvc, snsSvc)
 	profileHandler := handler.NewProfileHandler(profileSvc)
+	statsHandler := handler.NewStatsHandler(statsSvc)
+	membershipHandler := handler.NewMembershipHandler(membershipSvc)
 
 	e := echo.New()
 	e.HideBanner = true
@@ -49,7 +53,9 @@ func NewEcho(cfg *config.Config, db *gorm.DB, redis *redisstore.Store) (*echo.Ec
 	v1.GET("/sns/check", snsHandler.Check)
 	v1.POST("/wallet/nonce", walletHandler.Nonce)
 	v1.POST("/wallet/verify-sns", walletHandler.VerifySNS)
+	v1.GET("/stats/user-count", statsHandler.UserCount)
 	v1.GET("/user/profile", profileHandler.Get, middleware.JWT(jwtMgr))
+	v1.POST("/user/membership/renew", membershipHandler.Renew, middleware.JWT(jwtMgr))
 
 	return e, nil
 }

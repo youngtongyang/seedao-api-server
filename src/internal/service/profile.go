@@ -18,13 +18,14 @@ func NewProfileService(db *gorm.DB) *ProfileService {
 }
 
 type ProfileResult struct {
-	ID             int64  `json:"id"`
-	SNSName        string `json:"sns_name"`
-	Phone          string `json:"phone"`
-	RegisterSource string `json:"register_source"`
-	Avatar         string `json:"avatar"`
-	Bio            string `json:"bio"`
-	CreatedAt      string `json:"created_at"`
+	ID                  int64  `json:"id"`
+	SNSName             string `json:"sns_name"`
+	Phone               string `json:"phone"`
+	RegisterSource      string `json:"register_source"`
+	Avatar              string `json:"avatar"`
+	Bio                 string `json:"bio"`
+	MembershipExpiresAt string `json:"membership_expires_at"`
+	CreatedAt           string `json:"created_at"`
 }
 
 func (s *ProfileService) GetByUserID(userID int64) (*ProfileResult, error) {
@@ -38,11 +39,12 @@ func (s *ProfileService) GetByUserID(userID int64) (*ProfileResult, error) {
 	}
 
 	profile := &ProfileResult{
-		ID:             user.ID,
-		RegisterSource: user.RegisterSource,
-		Avatar:         user.Avatar,
-		Bio:            user.Bio,
-		CreatedAt:      user.CreatedAt.UTC().Format("2006-01-02T15:04:05Z"),
+		ID:                  user.ID,
+		RegisterSource:      user.RegisterSource,
+		Avatar:              user.Avatar,
+		Bio:                 user.Bio,
+		MembershipExpiresAt: formatMembershipExpiry(user.MembershipExpiresAt),
+		CreatedAt:           user.CreatedAt.UTC().Format("2006-01-02T15:04:05Z"),
 	}
 
 	if user.Phone != nil {

@@ -251,3 +251,97 @@ func TestProfile_Unauthorized(t *testing.T) {
 	require.Equal(t, http.StatusUnauthorized, rec.Code)
 }
 
+func TestStatsUserCount(t *testing.T) {
+	ts := testutil.NewTestServer(t)
+	ts.SeedRegistry(t, "0x8c913aec7443fe2018639133398955e0e17fb0c1", "legacy_one.seedao")
+	ts.SeedRegistry(t, "0x1111111111111111111111111111111111111111", "legacy_two.seedao")
+
+	phoneNum := "+8613900139011"
+	ts.SetSMSCode(t, phoneNum, "123456")
+	reg := testutil.DoJSON(t, ts.Echo, http.MethodPost, "/v1/auth/register", map[string]string{
+		"phone":         phoneNum,
+		"code":          "123456",
+		"register_type": "new_sns",
+		"sns_name":      "stats_test.seedao",
+	}, nil)
+	require.Equal(t, http.StatusOK, reg.Code)
+
+	rec := testutil.DoJSON(t, ts.Echo, http.MethodGet, "/v1/stats/user-count", nil, nil)
+	resp := testutil.ParseResponse(t, rec)
+
+	data := testutil.ParseData[map[string]int64](t, resp.Data)
+	assert.Equal(t, int64(2), data["legacy_sns_count"])
+	assert.Equal(t, int64(1), data["registered_user_count"])
+	assert.Equal(t, int64(1), data["new_sns_user_count"])
+	assert.Equal(t, int64(3), data["total_user_count"])
+}
+
+func TestRegisterNewSNS_DefaultMembership(t *testing.T) {
+	ts := testutil.NewTestServer(t)
+	phoneNum := "+8613900139012"
+	ts.SetSMSCode(t, phoneNum, "123456")
+
+	rec := testutil.DoJSON(t, ts.Echo, http.MethodPost, "/v1/auth/register", map[string]string{
+		"phone":         phoneNum,
+		"code":          "123456",
+		"register_type": "new_sns",
+		"sns_name":      "member_test.seedao",
+	}, nil)
+	resp := testutil.ParseResponse(t, rec)
+
+	data := testutil.ParseData[map[string]interface{}](t, resp.Data)
+	user := data["user"].(map[string]interface{})
+	assert.NotEmpty(t, user["membership_expires_at"])
+}
+
+func TestMembershipRenew(t *testing.T) {
+	ts := testutil.NewTestServer(t)
+	phoneNum := "+8613900139013"
+	ts.SetSMSCode(t, phoneNum, "123456")
+
+	reg := testutil.DoJSON(t, ts.Echo, http.MethodPost, "/v1/auth/register", map[string]string{
+		"phone":         phoneNum,
+		"code":          "123456",
+		"register_type": "new_sns",
+		"sns_name":      "renew_test.seedao",
+	}, nil)
+	regResp := testutil.ParseResponse(t, reg)
+	regData := testutil.ParseData[map[string]interface{}](t, regResp.Data)
+	token := regData["token"].(string)
+
+	rec := testutil.DoJSON(t, ts.Echo, http.MethodPost, "/v1/user/membership/renew", map[string]int{
+		"days": 30,
+	}, map[string]string{
+		"Authorization": "Bearer " + token,
+	})
+	resp := testutil.ParseResponse(t, rec)
+
+	data := testutil.ParseData[map[string]interface{}](t, resp.Data)
+	assert.Equal(t, float64(30), data["days_added"])
+	assert.NotEmpty(t, data["membership_expires_at"])
+}
+
+func TestMembershipRenew_DefaultDays(t *testing.T) {
+	ts := testutil.NewTestServer(t)
+	phoneNum := "+8613900139014"
+	ts.SetSMSCode(t, phoneNum, "123456")
+
+	reg := testutil.DoJSON(t, ts.Echo, http.MethodPost, "/v1/auth/register", map[string]string{
+		"phone":         phoneNum,
+		"code":          "123456",
+		"register_type": "new_sns",
+		"sns_name":      "renew_default.seedao",
+	}, nil)
+	regResp := testutil.ParseResponse(t, reg)
+	regData := testutil.ParseData[map[string]interface{}](t, regResp.Data)
+	token := regData["token"].(string)
+
+	rec := testutil.DoJSON(t, ts.Echo, http.MethodPost, "/v1/user/membership/renew", map[string]string{}, map[string]string{
+		"Authorization": "Bearer " + token,
+	})
+	resp := testutil.ParseResponse(t, rec)
+
+	data := testutil.ParseData[map[string]interface{}](t, resp.Data)
+	assert.Equal(t, float64(365), data["days_added"])
+}
+

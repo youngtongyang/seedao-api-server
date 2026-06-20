@@ -15,17 +15,20 @@ const (
 
 	MintStatusReserved = "reserved"
 	MintStatusOnChain  = "on_chain"
+
+	DefaultMembershipDays = 365
 )
 
 type User struct {
-	ID             int64          `gorm:"primaryKey"`
-	RegisterSource string         `gorm:"size:32;not null"`
-	Status         string         `gorm:"size:16;not null;default:active"`
-	Avatar         string         `gorm:"size:512"`
-	Bio            string         `gorm:"type:text"`
-	CreatedAt      time.Time      `gorm:"not null"`
-	UpdatedAt      time.Time      `gorm:"not null"`
-	DeletedAt      gorm.DeletedAt `gorm:"index"`
+	ID                  int64          `gorm:"primaryKey"`
+	RegisterSource      string         `gorm:"size:32;not null"`
+	Status              string         `gorm:"size:16;not null;default:active"`
+	Avatar              string         `gorm:"size:512"`
+	Bio                 string         `gorm:"type:text"`
+	MembershipExpiresAt *time.Time     `gorm:"index"`
+	CreatedAt           time.Time      `gorm:"not null"`
+	UpdatedAt           time.Time      `gorm:"not null"`
+	DeletedAt           gorm.DeletedAt `gorm:"index"`
 
 	Phone   *UserPhone `gorm:"foreignKey:UserID"`
 	SNSName *SNSName   `gorm:"foreignKey:UserID"`
