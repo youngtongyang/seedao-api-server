@@ -2,6 +2,17 @@
 
 本文档汇总 SeeDAO API 本地联调用的 `curl` 命令，便于在终端（bash/zsh）中复制执行。
 
+**变更标识：** `[NEW]` 本次新增 · `[CHANGED]` 本次变更
+
+### API 变更一览（v2.5）
+
+| 接口 | 标识 | 说明 |
+|------|------|------|
+| `GET /v1/stats/user-count` | `[NEW]` | 首页用户总数，无需鉴权 |
+| `/v1/payments/*` | `[NEW]` | 会员续费微信支付全流程 |
+| `GET /v1/user/profile` | `[CHANGED]` | 增加 `membership_expires_at` |
+| `POST /v1/auth/login` / `register` 的 `user` | `[CHANGED]` | 增加 `membership_expires_at` |
+
 **前提：**
 
 - API 已启动：`bash src/scripts/start-local.sh` 或 `go run ./cmd/server`
@@ -35,7 +46,29 @@ curl http://127.0.0.1:8080/health
 
 ---
 
-### 2. 发送验证码
+### 2. 首页用户总数 `[NEW]`
+
+```bash
+curl http://127.0.0.1:8080/v1/stats/user-count
+```
+
+预期：
+
+```json
+{
+  "code": 0,
+  "message": "ok",
+  "data": {
+    "total_user_count": 12345
+  }
+}
+```
+
+说明：无需鉴权；`total_user_count` = 链上存量 SNS + `new_sns` 注册用户。
+
+---
+
+### 3. 发送验证码
 
 ```bash
 curl -X POST http://127.0.0.1:8080/v1/auth/sms/send \
@@ -53,7 +86,7 @@ curl -X POST http://127.0.0.1:8080/v1/auth/sms/send \
 
 ## 二、SNS 名称检查（不消耗验证码）
 
-### 3. 查询可用名称
+### 4. 查询可用名称
 
 ```bash
 curl "http://127.0.0.1:8080/v1/sns/check?sns_name=alice_test_123.seedao"
@@ -61,7 +94,7 @@ curl "http://127.0.0.1:8080/v1/sns/check?sns_name=alice_test_123.seedao"
 
 预期：`available: true`，响应中 `sns_name` 为 `alice_test_123.seedao`
 
-### 4. 查询已被 registry 占用的名称
+### 5. 查询已被 registry 占用的名称
 
 ```bash
 curl "http://127.0.0.1:8080/v1/sns/check?sns_name=baiyu.seedao"
@@ -69,7 +102,7 @@ curl "http://127.0.0.1:8080/v1/sns/check?sns_name=baiyu.seedao"
 
 预期：`available: false`, `reason: taken_in_registry`
 
-### 5. 查询格式非法的名称
+### 6. 查询格式非法的名称
 
 ```bash
 curl "http://127.0.0.1:8080/v1/sns/check?sns_name=AB.seedao"
@@ -83,7 +116,7 @@ curl "http://127.0.0.1:8080/v1/sns/check?sns_name=AB.seedao"
 
 建议顺序：**先 SNS check → 再 register**
 
-### 6. 新用户注册
+### 7. 新用户注册
 
 ```bash
 curl -X POST http://127.0.0.1:8080/v1/auth/register \
@@ -108,7 +141,8 @@ curl -X POST http://127.0.0.1:8080/v1/auth/register \
     "user": {
       "id": 1001,
       "sns_name": "alice_test_123.seedao",
-      "register_source": "new_sns"
+      "register_source": "new_sns",
+      "membership_expires_at": "2027-06-15T08:00:00Z"
     }
   }
 }
@@ -127,11 +161,11 @@ curl -X POST http://127.0.0.1:8080/v1/auth/register \
 
 ---
 
-## 四、登录
+## 四、登录 `[CHANGED]`
 
 已注册用户需**重新发送验证码**后再登录。
 
-### 7. 登录
+### 8. 登录
 
 ```bash
 curl -X POST http://127.0.0.1:8080/v1/auth/login \
@@ -142,13 +176,13 @@ curl -X POST http://127.0.0.1:8080/v1/auth/login \
   }'
 ```
 
-响应格式同注册，返回 `token` 与 `user`。
+响应格式同注册，返回 `token` 与 `user`（含 `membership_expires_at`）。`[CHANGED]`
 
 ---
 
-## 五、个人 Profile（需 JWT）
+## 五、个人 Profile（需 JWT）`[CHANGED]`
 
-### 8. 查询 Profile
+### 9. 查询 Profile
 
 将 `<TOKEN>` 替换为注册/登录返回的 token：
 
@@ -157,9 +191,9 @@ curl http://127.0.0.1:8080/v1/user/profile \
   -H "Authorization: Bearer <TOKEN>"
 ```
 
-预期：返回 `id`、`sns_name`、脱敏 `phone`、`register_source` 等。
+预期：返回 `id`、`sns_name`、脱敏 `phone`、`register_source`、`membership_expires_at` 等。`[CHANGED]`
 
-### 9. 无 Token 访问（应失败）
+### 10. 无 Token 访问（应失败）
 
 ```bash
 curl http://127.0.0.1:8080/v1/user/profile
@@ -178,7 +212,7 @@ curl http://127.0.0.1:8080/v1/user/profile
 - 钱包：`0x78f625a65fc316d32d98d249b698fb509a6d98f2`
 - SNS：`tanghan.seedao`
 
-### 10. 获取钱包 Nonce / SIWE Message
+### 11. 获取钱包 Nonce / SIWE Message
 
 ```bash
 curl -X POST http://127.0.0.1:8080/v1/wallet/nonce \
@@ -191,7 +225,7 @@ curl -X POST http://127.0.0.1:8080/v1/wallet/nonce \
 
 返回 `nonce`、`message`、`expires_at`。用 MetaMask 等对 `message` 签名，得到 `signature`。
 
-### 11. 验证 SNS 归属
+### 12. 验证 SNS 归属
 
 ```bash
 curl -X POST http://127.0.0.1:8080/v1/wallet/verify-sns \
@@ -220,7 +254,7 @@ curl -X POST http://127.0.0.1:8080/v1/wallet/verify-sns \
 
 假签名预期：`40004` wallet signature verification failed
 
-### 12. 老用户注册
+### 13. 老用户注册
 
 需：**新手机验证码** + **有效钱包签名**（与 verify-sns 相同 message/signature）
 
@@ -241,7 +275,7 @@ curl -X POST http://127.0.0.1:8080/v1/auth/register \
 
 ---
 
-## 七、会员微信支付（需 JWT）
+## 七、会员微信支付（需 JWT）`[NEW]`
 
 支持两种支付渠道，通过创建订单时的 `pay_channel` 区分：
 
@@ -268,11 +302,11 @@ const payChannel = /Mobile|Android|iPhone/i.test(navigator.userAgent)
   : 'wechat_native'
 ```
 
-### 13. 创建支付订单
+### 14. 创建支付订单
 
 用户点击「立即续费」后调用。
 
-#### 13a. PC 扫码（Native，默认）
+#### 14a. PC 扫码（Native，默认）
 
 ```bash
 curl -X POST http://127.0.0.1:8080/v1/payments/orders \
@@ -308,7 +342,7 @@ curl -X POST http://127.0.0.1:8080/v1/payments/orders \
 
 前端用 `code_url` 本地生成二维码图片展示。
 
-#### 13b. 手机 H5（PWA / 移动浏览器）
+#### 14b. 手机 H5（PWA / 移动浏览器）
 
 ```bash
 curl -X POST http://127.0.0.1:8080/v1/payments/orders \
@@ -342,7 +376,7 @@ curl -X POST http://127.0.0.1:8080/v1/payments/orders \
 
 `days` 可省略，默认 `365`。非 365 天时金额按年费比例折算。
 
-### 14. 查询订单状态（前端轮询）
+### 15. 查询订单状态（前端轮询）
 
 ```bash
 curl http://127.0.0.1:8080/v1/payments/orders/<ORDER_NO> \
@@ -353,14 +387,14 @@ curl http://127.0.0.1:8080/v1/payments/orders/<ORDER_NO> \
 
 支付成功后 `status=paid`，并返回 `membership_expires_at`、`paid_at`、`wx_transaction_id`。
 
-### 15. 订单列表
+### 16. 订单列表
 
 ```bash
 curl "http://127.0.0.1:8080/v1/payments/orders?limit=20" \
   -H "Authorization: Bearer <TOKEN>"
 ```
 
-### 16. 关闭未支付订单
+### 17. 关闭未支付订单
 
 用户取消或二维码过期时：
 
@@ -369,7 +403,7 @@ curl -X POST http://127.0.0.1:8080/v1/payments/orders/<ORDER_NO>/close \
   -H "Authorization: Bearer <TOKEN>"
 ```
 
-### 17. 微信支付回调（微信服务器调用，无需 JWT）
+### 18. 微信支付回调（微信服务器调用，无需 JWT）
 
 ```
 POST https://<你的API域名>/v1/payments/wechat/notify
@@ -379,7 +413,7 @@ POST https://<你的API域名>/v1/payments/wechat/notify
 
 本地开发可用 ngrok 等暴露该路径；`dev_mode` 下不会收到真实微信回调。
 
-### 18. 模拟支付（仅 dev_mode）
+### 19. 模拟支付（仅 dev_mode）
 
 本地联调用，模拟微信回调完成支付：
 
@@ -464,6 +498,9 @@ curl -X POST http://127.0.0.1:8080/v1/auth/sms/send \
 
 # Step 2: 查 SNS 是否可用（不消耗验证码）
 curl "http://127.0.0.1:8080/v1/sns/check?sns_name=alice_test_123.seedao"
+
+# Step 2b: 首页用户总数（可选，[NEW]）
+curl http://127.0.0.1:8080/v1/stats/user-count
 
 # Step 3: 注册（消耗验证码，把 CODE 换成短信收到的）
 curl -X POST http://127.0.0.1:8080/v1/auth/register \
