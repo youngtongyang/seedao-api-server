@@ -15,20 +15,12 @@ func NewStatsService(db *gorm.DB) *StatsService {
 }
 
 type UserCountResult struct {
-	TotalUserCount      int64 `json:"total_user_count"`
-	LegacySNSCount      int64 `json:"legacy_sns_count"`
-	RegisteredUserCount int64 `json:"registered_user_count"`
-	NewSNSUserCount     int64 `json:"new_sns_user_count"`
+	TotalUserCount int64 `json:"total_user_count"`
 }
 
 func (s *StatsService) GetUserCount() (*UserCountResult, error) {
 	var legacySNSCount int64
 	if err := s.db.Model(&model.SNSChainRegistry{}).Count(&legacySNSCount).Error; err != nil {
-		return nil, err
-	}
-
-	var registeredUserCount int64
-	if err := s.db.Model(&model.User{}).Count(&registeredUserCount).Error; err != nil {
 		return nil, err
 	}
 
@@ -40,9 +32,6 @@ func (s *StatsService) GetUserCount() (*UserCountResult, error) {
 	}
 
 	return &UserCountResult{
-		TotalUserCount:      legacySNSCount + newSNSUserCount,
-		LegacySNSCount:      legacySNSCount,
-		RegisteredUserCount: registeredUserCount,
-		NewSNSUserCount:     newSNSUserCount,
+		TotalUserCount: legacySNSCount + newSNSUserCount,
 	}, nil
 }

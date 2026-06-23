@@ -270,9 +270,6 @@ func TestStatsUserCount(t *testing.T) {
 	resp := testutil.ParseResponse(t, rec)
 
 	data := testutil.ParseData[map[string]int64](t, resp.Data)
-	assert.Equal(t, int64(2), data["legacy_sns_count"])
-	assert.Equal(t, int64(1), data["registered_user_count"])
-	assert.Equal(t, int64(1), data["new_sns_user_count"])
 	assert.Equal(t, int64(3), data["total_user_count"])
 }
 
