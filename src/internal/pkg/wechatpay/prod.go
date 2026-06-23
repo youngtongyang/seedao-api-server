@@ -9,7 +9,6 @@ import (
 
 	"github.com/wechatpay-apiv3/wechatpay-go/core"
 	"github.com/wechatpay-apiv3/wechatpay-go/core/auth/verifiers"
-	"github.com/wechatpay-apiv3/wechatpay-go/core/downloader"
 	"github.com/wechatpay-apiv3/wechatpay-go/core/notify"
 	"github.com/wechatpay-apiv3/wechatpay-go/core/option"
 	"github.com/wechatpay-apiv3/wechatpay-go/services/payments"
@@ -37,17 +36,30 @@ func newProdClient(cfg Config) (*prodClient, error) {
 		return nil, fmt.Errorf("load wechat private key: %w", err)
 	}
 
+	wechatPublicKey, err := utils.LoadPublicKeyWithPath(cfg.WechatPublicKeyPath)
+	if err != nil {
+		return nil, fmt.Errorf("load wechat public key: %w", err)
+	}
+
 	ctx := context.Background()
 	opts := []core.ClientOption{
-		option.WithWechatPayAutoAuthCipher(cfg.MchID, cfg.CertSerialNo, privateKey, cfg.APIv3Key),
+		option.WithWechatPayPublicKeyAuthCipher(
+			cfg.MchID,
+			cfg.CertSerialNo,
+			privateKey,
+			cfg.WechatPublicKeyID,
+			wechatPublicKey,
+		),
 	}
 	client, err := core.NewClient(ctx, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("create wechat pay client: %w", err)
 	}
 
-	certificateVisitor := downloader.MgrInstance().GetCertificateVisitor(cfg.MchID)
-	notifyHandler := notify.NewNotifyHandler(cfg.APIv3Key, verifiers.NewSHA256WithRSAVerifier(certificateVisitor))
+	notifyHandler := notify.NewNotifyHandler(
+		cfg.APIv3Key,
+		verifiers.NewSHA256WithRSAPubkeyVerifier(cfg.WechatPublicKeyID, *wechatPublicKey),
+	)
 
 	return &prodClient{
 		mchID:       cfg.MchID,

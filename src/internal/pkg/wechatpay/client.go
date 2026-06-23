@@ -51,9 +51,11 @@ type Config struct {
 	MchID          string
 	AppID          string
 	APIv3Key       string
-	CertSerialNo   string
-	PrivateKeyPath string
-	NotifyURL      string
+	CertSerialNo        string
+	PrivateKeyPath      string
+	WechatPublicKeyID   string
+	WechatPublicKeyPath string
+	NotifyURL           string
 	H5WapName      string
 	H5WapURL       string
 	H5ReturnURL    string
@@ -69,6 +71,9 @@ func NewClient(cfg Config) (Client, error) {
 	}
 	if cfg.CertSerialNo == "" || cfg.PrivateKeyPath == "" {
 		return nil, fmt.Errorf("wechat_pay: cert_serial_no and private_key_path are required when dev_mode is false")
+	}
+	if cfg.WechatPublicKeyID == "" || cfg.WechatPublicKeyPath == "" {
+		return nil, fmt.Errorf("wechat_pay: wechat_public_key_id and wechat_public_key_path are required when dev_mode is false")
 	}
 	if cfg.NotifyURL == "" {
 		return nil, fmt.Errorf("wechat_pay: notify_url is required when dev_mode is false")

@@ -56,6 +56,8 @@ type WechatPayConfig struct {
 	APIv3Key             string `yaml:"api_v3_key"`
 	CertSerialNo         string `yaml:"cert_serial_no"`
 	PrivateKeyPath       string `yaml:"private_key_path"`
+	WechatPublicKeyID    string `yaml:"wechat_public_key_id"`
+	WechatPublicKeyPath  string `yaml:"wechat_public_key_path"`
 	NotifyURL            string `yaml:"notify_url"`
 	H5WapName            string `yaml:"h5_wap_name"`
 	H5WapURL             string `yaml:"h5_wap_url"`

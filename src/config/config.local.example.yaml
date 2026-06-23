@@ -35,6 +35,8 @@ wechat_pay:
   api_v3_key: ""
   cert_serial_no: ""
   private_key_path: ""
+  wechat_public_key_id: ""
+  wechat_public_key_path: ""
   notify_url: "https://your-api.example.com/v1/payments/wechat/notify"
   h5_wap_name: "SeeDAO"
   h5_wap_url: "https://app.seedao.top"
