@@ -17,6 +17,19 @@ const (
 	MintStatusOnChain  = "on_chain"
 
 	DefaultMembershipDays = 365
+
+	ProductTypeMembershipRenew = "membership_renew"
+
+	PayChannelWechatNative = "wechat_native"
+	PayChannelWechatH5     = "wechat_h5"
+
+	PaymentOrderStatusPending = "pending"
+	PaymentOrderStatusPaid    = "paid"
+	PaymentOrderStatusClosed  = "closed"
+
+	PaymentRefundStatusPending = "pending"
+	PaymentRefundStatusSuccess = "success"
+	PaymentRefundStatusFailed  = "failed"
 )
 
 type User struct {
@@ -80,3 +93,40 @@ type SMSSendLog struct {
 }
 
 func (SMSSendLog) TableName() string { return "sms_send_logs" }
+
+type PaymentOrder struct {
+	ID              int64      `gorm:"primaryKey"`
+	OrderNo         string     `gorm:"size:64;uniqueIndex;not null"`
+	UserID          int64      `gorm:"index;not null"`
+	ProductType     string     `gorm:"size:32;not null"`
+	ProductDays     int        `gorm:"not null;default:365"`
+	Amount          int        `gorm:"not null"`
+	Currency        string     `gorm:"size:8;not null;default:CNY"`
+	Status          string     `gorm:"size:16;not null;default:pending;index"`
+	PayChannel      string     `gorm:"size:16;not null;default:wechat_native"`
+	CodeURL         *string    `gorm:"type:text"`
+	WxTransactionID *string    `gorm:"size:64;index"`
+	PaidAt          *time.Time
+	ExpiredAt       time.Time  `gorm:"not null"`
+	ClosedAt        *time.Time
+	NotifyPayload   *string    `gorm:"type:text"`
+	CreatedAt       time.Time  `gorm:"not null"`
+	UpdatedAt       time.Time  `gorm:"not null"`
+}
+
+func (PaymentOrder) TableName() string { return "payment_orders" }
+
+type PaymentRefund struct {
+	ID            int64     `gorm:"primaryKey"`
+	OrderID       int64     `gorm:"index;not null"`
+	RefundNo      string    `gorm:"size:64;uniqueIndex;not null"`
+	WxRefundID    *string   `gorm:"size:64"`
+	Amount        int       `gorm:"not null"`
+	Reason        string    `gorm:"size:256"`
+	Status        string    `gorm:"size:16;not null;default:pending"`
+	NotifyPayload *string   `gorm:"type:text"`
+	CreatedAt     time.Time `gorm:"not null"`
+	UpdatedAt     time.Time `gorm:"not null"`
+}
+
+func (PaymentRefund) TableName() string { return "payment_refunds" }

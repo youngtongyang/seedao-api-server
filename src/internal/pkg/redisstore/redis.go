@@ -89,3 +89,11 @@ func (s *Store) DeleteWalletNonce(ctx context.Context, address string) error {
 func WalletNonceKey(address string) string {
 	return fmt.Sprintf("wallet:nonce:%s", address)
 }
+
+func (s *Store) TryPaymentNotifyLock(ctx context.Context, orderNo string, ttl time.Duration) (bool, error) {
+	return s.client.SetNX(ctx, "payment:notify:lock:"+orderNo, "1", ttl).Result()
+}
+
+func (s *Store) ReleasePaymentNotifyLock(ctx context.Context, orderNo string) error {
+	return s.client.Del(ctx, "payment:notify:lock:"+orderNo).Err()
+}

@@ -34,3 +34,20 @@ aliyun_sms:
 
 siwe:
   chain_id: 1
+
+wechat_pay:
+  dev_mode: false
+  mch_id: "your-mch-id"
+  app_id: "wxXXXXXXXX"
+  api_v3_key: "your-32-char-apiv3-key"
+  cert_serial_no: "your-cert-serial-no"
+  private_key_path: "/path/to/apiclient_key.pem"
+  wechat_public_key_id: "PUB_KEY_ID_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+  wechat_public_key_path: "/path/to/pub_key.pem"
+  notify_url: "https://api.your-domain.com/v1/payments/wechat/notify"
+  h5_wap_name: "SeeDAO"
+  h5_wap_url: "https://app.seedao.top"
+  h5_return_url: "https://app.seedao.top/pay/result"
+  membership_price_fen: 9900
+  order_expire_minutes: 15
+  description: "SeeDAO 会员续费"

@@ -42,6 +42,18 @@ func mapServiceError(c echo.Context, err error) error {
 		return response.Fail(c, http.StatusTooManyRequests, errcode.TooManyRequests)
 	case errors.Is(err, service.ErrUserNotFound):
 		return response.Fail(c, http.StatusBadRequest, errcode.InvalidSMSCode)
+	case errors.Is(err, service.ErrPaymentOrderNotFound):
+		return response.Fail(c, http.StatusBadRequest, errcode.PaymentOrderNotFound)
+	case errors.Is(err, service.ErrPaymentOrderForbidden):
+		return response.Fail(c, http.StatusForbidden, errcode.PaymentOrderNotFound)
+	case errors.Is(err, service.ErrPaymentOrderNotPending):
+		return response.Fail(c, http.StatusBadRequest, errcode.PaymentOrderInvalid)
+	case errors.Is(err, service.ErrPaymentOrderExpired):
+		return response.Fail(c, http.StatusBadRequest, errcode.PaymentOrderInvalid)
+	case errors.Is(err, service.ErrPaymentProductInvalid):
+		return response.Fail(c, http.StatusBadRequest, errcode.InvalidParam)
+	case errors.Is(err, service.ErrPaymentChannelInvalid):
+		return response.Fail(c, http.StatusBadRequest, errcode.InvalidParam)
 	default:
 		c.Logger().Error(err)
 		if middleware.IsDebug(c) {
