@@ -34,6 +34,7 @@ seedao-api-server/
 ├── docker-compose.prod.yml     # 生产环境（redis + api）
 ├── docs/
 │   ├── DEPLOYMENT.md          # 部署步骤说明
+│   ├── OPERATIONS.md          # 运维操作手册（发版、备份、排错、删用户等）
 │   └── API_TEST.md            # 本地联调 curl（含 [NEW]/[CHANGED] 标注）
 └── README.md
 ```
@@ -421,7 +422,7 @@ docker compose -f docker-compose.prod.yml up -d
 # 更新：bash deploy/pull-deploy.sh
 ```
 
-**阿里云 ECS 生产部署完整步骤**见 [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) 第一章「服务器生产部署」。
+**阿里云 ECS 生产部署完整步骤**见 [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) 第一章；**日常运维**见 [docs/OPERATIONS.md](docs/OPERATIONS.md)。
 
 ---
 
