@@ -76,6 +76,7 @@ cp config.local.example.yaml config.local.yaml
 | 接口 | 鉴权 | 标识 | 说明 |
 |------|------|------|------|
 | `GET /v1/stats/user-count` | 无 | `[NEW]` | 首页展示用户总数 |
+| `GET /v1/auth/phone/check` | 无 | `[NEW]` | 注册前检查手机号未占用 |
 | `POST /v1/payments/orders` | JWT | `[NEW]` | 创建会员续费订单（Native / H5） |
 | `GET /v1/payments/orders` | JWT | `[NEW]` | 订单列表 |
 | `GET /v1/payments/orders/:order_no` | JWT | `[NEW]` | 查询订单（前端轮询） |
@@ -106,6 +107,7 @@ cp config.local.example.yaml config.local.yaml
 | 40006 | 手机号已注册 |
 | 40007 | 支付订单不存在或无权访问 |
 | 40008 | 支付订单状态无效 |
+| 40009 | 手机号未注册（可注册） |
 | 42901 | 发送过于频繁 |
 | 50000 | 服务器内部错误 |
 
@@ -147,7 +149,38 @@ curl http://127.0.0.1:8080/health
 
 ---
 
-### 3. 登录 `[CHANGED]`
+### 3. 检查手机号未注册 `[NEW]`
+
+`GET /v1/auth/phone/check?phone=+8613800138000` · 无需鉴权 · **不消耗验证码**
+
+```bash
+curl "http://127.0.0.1:8080/v1/auth/phone/check?phone=%2B8613800138000"
+```
+
+未注册（可继续注册流程）：
+
+```json
+{
+  "code": 40009,
+  "message": "phone not registered",
+  "data": {
+    "phone": "+8613800138000",
+    "registered": false
+  }
+}
+```
+
+已注册：
+
+```json
+{ "code": 40006, "message": "phone already registered" }
+```
+
+说明：手机号须为 E.164（带 `+86`）；`code=40009` 表示尚未注册，前端可进入发验证码 / 注册流程。
+
+---
+
+### 4. 登录 `[CHANGED]`
 
 `POST /v1/auth/login` · 无需鉴权
 
@@ -178,7 +211,7 @@ curl http://127.0.0.1:8080/health
 
 ---
 
-### 4. 注册 `[CHANGED]`
+### 5. 注册 `[CHANGED]`
 
 `POST /v1/auth/register` · 无需鉴权
 
@@ -214,7 +247,7 @@ curl http://127.0.0.1:8080/health
 
 ---
 
-### 5. SNS 名称可用性
+### 6. SNS 名称可用性
 
 `GET /v1/sns/check?sns_name=baiyu.seedao` · 无需鉴权
 
@@ -241,7 +274,7 @@ curl http://127.0.0.1:8080/health
 
 ---
 
-### 6. 钱包 Nonce（SIWE）
+### 7. 钱包 Nonce（SIWE）
 
 `POST /v1/wallet/nonce` · 无需鉴权
 
@@ -266,7 +299,7 @@ curl http://127.0.0.1:8080/health
 
 ---
 
-### 7. 验证 SNS 归属
+### 8. 验证 SNS 归属
 
 `POST /v1/wallet/verify-sns` · 无需鉴权
 
@@ -297,7 +330,7 @@ curl http://127.0.0.1:8080/health
 
 ---
 
-### 8. 个人 Profile `[CHANGED]`
+### 9. 个人 Profile `[CHANGED]`
 
 `GET /v1/user/profile` · **需要 JWT**
 
@@ -325,7 +358,7 @@ curl -H "Authorization: Bearer <token>" http://127.0.0.1:8080/v1/user/profile
 
 ---
 
-### 9. 首页用户总数 `[NEW]`
+### 10. 首页用户总数 `[NEW]`
 
 `GET /v1/stats/user-count` · 无需鉴权
 
@@ -349,7 +382,7 @@ curl https://api.seedao.xyz/v1/stats/user-count
 
 ---
 
-### 10. 会员微信支付 `[NEW]`
+### 11. 会员微信支付 `[NEW]`
 
 以下接口均需 JWT（微信回调除外）。`pay_channel` 支持 `wechat_native`（PC 扫码）与 `wechat_h5`（手机浏览器）。
 

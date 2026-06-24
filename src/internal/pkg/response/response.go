@@ -15,9 +15,13 @@ type Body struct {
 }
 
 func OK(c echo.Context, data interface{}) error {
-	return c.JSON(http.StatusOK, Body{
-		Code:    errcode.OK,
-		Message: errcode.Message(errcode.OK),
+	return WithCode(c, http.StatusOK, errcode.OK, data)
+}
+
+func WithCode(c echo.Context, httpStatus, code int, data interface{}) error {
+	return c.JSON(httpStatus, Body{
+		Code:    code,
+		Message: errcode.Message(code),
 		Data:    data,
 	})
 }

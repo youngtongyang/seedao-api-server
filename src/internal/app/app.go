@@ -69,6 +69,7 @@ func NewEcho(cfg *config.Config, db *gorm.DB, redis *redisstore.Store) (*echo.Ec
 
 	v1 := e.Group("/v1")
 	v1.POST("/auth/sms/send", authHandler.SendSMS)
+	v1.GET("/auth/phone/check", authHandler.CheckPhone)
 	v1.POST("/auth/login", authHandler.Login)
 	v1.POST("/auth/register", authHandler.Register)
 	v1.GET("/sns/check", snsHandler.Check)

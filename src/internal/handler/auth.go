@@ -36,6 +36,20 @@ func (h *AuthHandler) SendSMS(c echo.Context) error {
 	return response.OK(c, result)
 }
 
+func (h *AuthHandler) CheckPhone(c echo.Context) error {
+	phoneNum := c.QueryParam("phone")
+	if phoneNum == "" {
+		return response.Fail(c, http.StatusBadRequest, errcode.InvalidParam)
+	}
+
+	result, err := h.auth.CheckPhone(phoneNum)
+	if err != nil {
+		return mapServiceError(c, err)
+	}
+
+	return response.WithCode(c, http.StatusOK, errcode.PhoneNotRegistered, result)
+}
+
 type loginRequest struct {
 	Phone string `json:"phone"`
 	Code  string `json:"code"`

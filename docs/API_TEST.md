@@ -9,6 +9,7 @@
 | 接口 | 标识 | 说明 |
 |------|------|------|
 | `GET /v1/stats/user-count` | `[NEW]` | 首页用户总数，无需鉴权 |
+| `GET /v1/auth/phone/check` | `[NEW]` | 注册前检查手机号未占用，`code=40009` |
 | `/v1/payments/*` | `[NEW]` | 会员续费微信支付全流程 |
 | `GET /v1/user/profile` | `[CHANGED]` | 增加 `membership_expires_at` |
 | `POST /v1/auth/login` / `register` 的 `user` | `[CHANGED]` | 增加 `membership_expires_at` |
@@ -81,6 +82,33 @@ curl -X POST http://127.0.0.1:8080/v1/auth/sms/send \
 - 同号 60 秒内不可重复发送
 - 同 IP 每小时最多 20 次
 - `dev_mode: true` 时验证码打在 API 日志；`false` 时真实发短信
+
+---
+
+### 4. 检查手机号未注册 `[NEW]`
+
+注册前调用，**不消耗验证码**。
+
+```bash
+curl "http://127.0.0.1:8080/v1/auth/phone/check?phone=%2B8613800138000"
+```
+
+未注册预期：
+
+```json
+{
+  "code": 40009,
+  "message": "phone not registered",
+  "data": {
+    "phone": "+8613800138000",
+    "registered": false
+  }
+}
+```
+
+已注册预期：`code=40006`, `message=phone already registered`
+
+格式非法（未带 `+86`）预期：`40001`
 
 ---
 
@@ -496,6 +524,9 @@ curl -X POST http://127.0.0.1:8080/v1/auth/sms/send \
   -H "Content-Type: application/json" \
   -d '{"phone":"+8613800138000"}'
 
+# Step 1b: 检查手机号未注册（可选，[NEW]）
+curl "http://127.0.0.1:8080/v1/auth/phone/check?phone=%2B8613800138000"
+
 # Step 2: 查 SNS 是否可用（不消耗验证码）
 curl "http://127.0.0.1:8080/v1/sns/check?sns_name=alice_test_123.seedao"
 
@@ -550,6 +581,7 @@ curl -X POST http://127.0.0.1:8080/v1/auth/login \
 | `wallet_address_mismatch` | 签名地址与 wallet 不一致 |
 | 40005 | 钱包无存量 SNS |
 | 40006 | 手机号已注册 |
+| 40009 | 手机号未注册（可注册，`/v1/auth/phone/check`） |
 | 40007 | 支付订单不存在或无权访问 |
 | 40008 | 支付订单状态无效（如已支付、已关闭） |
 | 42901 | 发送过于频繁 |

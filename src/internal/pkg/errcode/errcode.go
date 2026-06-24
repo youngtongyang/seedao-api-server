@@ -11,6 +11,7 @@ const (
 	TooManyRequests     = 42901
 	PaymentOrderNotFound = 40007
 	PaymentOrderInvalid  = 40008
+	PhoneNotRegistered   = 40009
 	InternalError       = 50000
 )
 
@@ -25,6 +26,7 @@ var messages = map[int]string{
 	TooManyRequests:    "too many requests",
 	PaymentOrderNotFound: "payment order not found",
 	PaymentOrderInvalid:  "payment order invalid",
+	PhoneNotRegistered:   "phone not registered",
 	InternalError:      "internal server error",
 }
 

@@ -24,6 +24,30 @@ func NewAuthService(db *gorm.DB, sms *SMSService, sns *SNSService, wallet *Walle
 	return &AuthService{db: db, sms: sms, sns: sns, wallet: wallet, jwt: jwt}
 }
 
+type PhoneCheckResult struct {
+	Phone      string `json:"phone"`
+	Registered bool   `json:"registered"`
+}
+
+func (s *AuthService) CheckPhone(phoneNum string) (*PhoneCheckResult, error) {
+	if err := phone.Validate(phoneNum); err != nil {
+		return nil, ErrInvalidParam
+	}
+
+	exists, err := phoneExists(s.db, phoneNum)
+	if err != nil {
+		return nil, err
+	}
+	if exists {
+		return nil, ErrPhoneAlreadyExists
+	}
+
+	return &PhoneCheckResult{
+		Phone:      phoneNum,
+		Registered: false,
+	}, nil
+}
+
 type AuthUser struct {
 	ID                  int64  `json:"id"`
 	SNSName             string `json:"sns_name"`

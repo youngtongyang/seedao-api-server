@@ -45,6 +45,44 @@ func TestSendSMS_InvalidPhone(t *testing.T) {
 	require.Equal(t, http.StatusBadRequest, rec.Code)
 }
 
+func TestPhoneCheck_NotRegistered(t *testing.T) {
+	ts := testutil.NewTestServer(t)
+
+	rec := testutil.DoJSON(t, ts.Echo, http.MethodGet, "/v1/auth/phone/check?phone=%2B8613900138999", nil, nil)
+	resp := testutil.ParseResponse(t, rec)
+
+	assert.Equal(t, errcode.PhoneNotRegistered, resp.Code)
+	data := testutil.ParseData[map[string]interface{}](t, resp.Data)
+	assert.Equal(t, "+8613900138999", data["phone"])
+	assert.Equal(t, false, data["registered"])
+}
+
+func TestPhoneCheck_AlreadyRegistered(t *testing.T) {
+	ts := testutil.NewTestServer(t)
+	phoneNum := "+8613900138998"
+	ts.SetSMSCode(t, phoneNum, "123456")
+
+	reg := testutil.DoJSON(t, ts.Echo, http.MethodPost, "/v1/auth/register", map[string]string{
+		"phone":         phoneNum,
+		"code":          "123456",
+		"register_type": "new_sns",
+		"sns_name":      "phone_check_taken.seedao",
+	}, nil)
+	require.Equal(t, 0, testutil.ParseResponse(t, reg).Code)
+
+	rec := testutil.DoJSON(t, ts.Echo, http.MethodGet, "/v1/auth/phone/check?phone=%2B8613900138998", nil, nil)
+	require.Equal(t, http.StatusBadRequest, rec.Code)
+	resp := testutil.ParseErrorResponse(t, rec)
+	assert.Equal(t, errcode.PhoneAlreadyExists, resp.Code)
+}
+
+func TestPhoneCheck_InvalidPhone(t *testing.T) {
+	ts := testutil.NewTestServer(t)
+
+	rec := testutil.DoJSON(t, ts.Echo, http.MethodGet, "/v1/auth/phone/check?phone=13800138999", nil, nil)
+	require.Equal(t, http.StatusBadRequest, rec.Code)
+}
+
 func TestSNSCheck_Available(t *testing.T) {
 	ts := testutil.NewTestServer(t)
 
