@@ -30,6 +30,18 @@ const (
 	PaymentRefundStatusPending = "pending"
 	PaymentRefundStatusSuccess = "success"
 	PaymentRefundStatusFailed  = "failed"
+
+	CouponDiscountFixed   = "fixed"
+	CouponDiscountPercent = "percent"
+
+	CouponStatusActive   = "active"
+	CouponStatusDisabled = "disabled"
+
+	CouponRedemptionReserved = "reserved"
+	CouponRedemptionConsumed = "consumed"
+	CouponRedemptionReleased = "released"
+
+	MinPaymentAmountFen = 1
 )
 
 type User struct {
@@ -100,6 +112,9 @@ type PaymentOrder struct {
 	UserID          int64      `gorm:"index;not null"`
 	ProductType     string     `gorm:"size:32;not null"`
 	ProductDays     int        `gorm:"not null;default:365"`
+	OriginalAmount  int        `gorm:"not null;default:0"`
+	DiscountAmount  int        `gorm:"not null;default:0"`
+	CouponCode      *string    `gorm:"size:64"`
 	Amount          int        `gorm:"not null"`
 	Currency        string     `gorm:"size:8;not null;default:CNY"`
 	Status          string     `gorm:"size:16;not null;default:pending;index"`
@@ -130,3 +145,36 @@ type PaymentRefund struct {
 }
 
 func (PaymentRefund) TableName() string { return "payment_refunds" }
+
+type Coupon struct {
+	ID               int64     `gorm:"primaryKey"`
+	Code             string    `gorm:"size:64;uniqueIndex;not null"`
+	DiscountType     string    `gorm:"size:16;not null;default:fixed"`
+	DiscountValue    int       `gorm:"not null"`
+	ProductType      *string   `gorm:"size:32"`
+	MinAmountFen     int       `gorm:"not null;default:0"`
+	MaxTotalUses     *int
+	UsedCount        int       `gorm:"not null;default:0"`
+	MaxUsesPerUser   int       `gorm:"not null;default:1"`
+	ValidFrom        time.Time `gorm:"not null"`
+	ValidUntil       time.Time `gorm:"not null"`
+	Status           string    `gorm:"size:16;not null;default:active"`
+	CreatedAt        time.Time `gorm:"not null"`
+	UpdatedAt        time.Time `gorm:"not null"`
+}
+
+func (Coupon) TableName() string { return "coupons" }
+
+type CouponRedemption struct {
+	ID             int64     `gorm:"primaryKey"`
+	CouponID       int64     `gorm:"index;not null"`
+	UserID         int64     `gorm:"index;not null"`
+	OrderID        *int64    `gorm:"index"`
+	OrderNo        string    `gorm:"size:64;not null;index"`
+	DiscountAmount int       `gorm:"not null"`
+	Status         string    `gorm:"size:16;not null;default:reserved;index"`
+	CreatedAt      time.Time `gorm:"not null"`
+	UpdatedAt      time.Time `gorm:"not null"`
+}
+
+func (CouponRedemption) TableName() string { return "coupon_redemptions" }

@@ -411,6 +411,72 @@ func TestPaymentCreateOrder(t *testing.T) {
 	assert.Equal(t, "pending", data["status"])
 	assert.NotEmpty(t, data["code_url"])
 	assert.Equal(t, float64(9900), data["amount"])
+	assert.Equal(t, float64(9900), data["original_amount"])
+}
+
+func TestCouponPreview(t *testing.T) {
+	ts := testutil.NewTestServer(t)
+	ts.SeedCoupon(t, "SAVE1000", 1000)
+	token := registerAndGetToken(t, ts, "+8613900139021", "coupon_preview.seedao")
+
+	rec := testutil.DoJSON(t, ts.Echo, http.MethodPost, "/v1/payments/coupons/preview", map[string]interface{}{
+		"product_type": "membership_renew",
+		"coupon_code":  "save1000",
+	}, map[string]string{
+		"Authorization": "Bearer " + token,
+	})
+	resp := testutil.ParseResponse(t, rec)
+	data := testutil.ParseData[map[string]interface{}](t, resp.Data)
+	assert.Equal(t, "SAVE1000", data["coupon_code"])
+	assert.Equal(t, float64(9900), data["original_amount"])
+	assert.Equal(t, float64(1000), data["discount_amount"])
+	assert.Equal(t, float64(8900), data["final_amount"])
+}
+
+func TestPaymentCreateOrderWithCoupon(t *testing.T) {
+	ts := testutil.NewTestServer(t)
+	ts.SeedCoupon(t, "SAVE500", 500)
+	token := registerAndGetToken(t, ts, "+8613900139022", "coupon_order.seedao")
+
+	rec := testutil.DoJSON(t, ts.Echo, http.MethodPost, "/v1/payments/orders", map[string]interface{}{
+		"product_type": "membership_renew",
+		"coupon_code":  "SAVE500",
+	}, map[string]string{
+		"Authorization": "Bearer " + token,
+	})
+	resp := testutil.ParseResponse(t, rec)
+	data := testutil.ParseData[map[string]interface{}](t, resp.Data)
+	assert.Equal(t, float64(9900), data["original_amount"])
+	assert.Equal(t, float64(500), data["discount_amount"])
+	assert.Equal(t, float64(9400), data["amount"])
+	assert.Equal(t, "SAVE500", data["coupon_code"])
+}
+
+func TestPaymentCloseOrderReleasesCoupon(t *testing.T) {
+	ts := testutil.NewTestServer(t)
+	ts.SeedCoupon(t, "ONCE500", 500)
+	token := registerAndGetToken(t, ts, "+8613900139023", "coupon_close.seedao")
+
+	createRec := testutil.DoJSON(t, ts.Echo, http.MethodPost, "/v1/payments/orders", map[string]interface{}{
+		"coupon_code": "ONCE500",
+	}, map[string]string{
+		"Authorization": "Bearer " + token,
+	})
+	createResp := testutil.ParseResponse(t, createRec)
+	createData := testutil.ParseData[map[string]interface{}](t, createResp.Data)
+	orderNo := createData["order_no"].(string)
+
+	closeRec := testutil.DoJSON(t, ts.Echo, http.MethodPost, "/v1/payments/orders/"+orderNo+"/close", nil, map[string]string{
+		"Authorization": "Bearer " + token,
+	})
+	testutil.ParseResponse(t, closeRec)
+
+	rec := testutil.DoJSON(t, ts.Echo, http.MethodPost, "/v1/payments/orders", map[string]interface{}{
+		"coupon_code": "ONCE500",
+	}, map[string]string{
+		"Authorization": "Bearer " + token,
+	})
+	testutil.ParseResponse(t, rec)
 }
 
 func TestPaymentCreateOrderH5(t *testing.T) {

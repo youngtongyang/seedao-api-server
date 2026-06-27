@@ -98,6 +98,24 @@ func (ts *TestServer) SetSMSCode(t *testing.T, phoneNum, code string) {
 	require.NoError(t, err)
 }
 
+func (ts *TestServer) SeedCoupon(t *testing.T, code string, discountFen int) {
+	t.Helper()
+	now := time.Now()
+	productType := model.ProductTypeMembershipRenew
+	require.NoError(t, ts.DB.Create(&model.Coupon{
+		Code:           code,
+		DiscountType:   model.CouponDiscountFixed,
+		DiscountValue:  discountFen,
+		ProductType:    &productType,
+		MaxUsesPerUser: 1,
+		ValidFrom:      now.Add(-time.Hour),
+		ValidUntil:     now.Add(24 * time.Hour),
+		Status:         model.CouponStatusActive,
+		CreatedAt:      now,
+		UpdatedAt:      now,
+	}).Error)
+}
+
 func (ts *TestServer) SeedRegistry(t *testing.T, wallet, snsName string) {
 	t.Helper()
 	now := time.Now()

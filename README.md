@@ -71,6 +71,14 @@ cp config.local.example.yaml config.local.yaml
 
 **变更标识：** `[NEW]` 本次新增 · `[CHANGED]` 本次变更（对接时请优先关注）
 
+### API 变更一览（v2.6）
+
+| 接口 | 鉴权 | 标识 | 说明 |
+|------|------|------|------|
+| `POST /v1/payments/coupons/preview` | JWT | `[NEW]` | 优惠券试算（原价 / 优惠 / 实付） |
+| `POST /v1/payments/orders` | JWT | `[CHANGED]` | 可选 `coupon_code`，响应增加 `original_amount`、`discount_amount` |
+| `GET /v1/payments/orders/:order_no` | JWT | `[CHANGED]` | 响应增加 `original_amount`、`discount_amount`、`coupon_code` |
+
 ### API 变更一览（v2.5）
 
 | 接口 | 鉴权 | 标识 | 说明 |
@@ -108,6 +116,10 @@ cp config.local.example.yaml config.local.yaml
 | 40007 | 支付订单不存在或无权访问 |
 | 40008 | 支付订单状态无效 |
 | 40009 | 手机号未注册（可注册） |
+| 40010 | 优惠券无效（不存在 / 过期 / 已停用） |
+| 40011 | 优惠券不适用（商品 / 最低消费不符） |
+| 40012 | 优惠券已达使用上限 |
+| 40013 | 优惠后金额过低（微信最低 1 分） |
 | 42901 | 发送过于频繁 |
 | 50000 | 服务器内部错误 |
 
@@ -382,34 +394,68 @@ curl https://api.seedao.xyz/v1/stats/user-count
 
 ---
 
-### 11. 会员微信支付 `[NEW]`
+### 11. 会员微信支付
 
 以下接口均需 JWT（微信回调除外）。`pay_channel` 支持 `wechat_native`（PC 扫码）与 `wechat_h5`（手机浏览器）。
 
-| 方法 | 路径 | 鉴权 |
-|------|------|------|
-| POST | `/v1/payments/orders` | JWT |
-| GET | `/v1/payments/orders` | JWT |
-| GET | `/v1/payments/orders/:order_no` | JWT |
-| POST | `/v1/payments/orders/:order_no/close` | JWT |
-| POST | `/v1/payments/wechat/notify` | 无（微信服务器） |
-| POST | `/v1/payments/dev/simulate-pay` | JWT（仅 `dev_mode`） |
+| 方法 | 路径 | 鉴权 | 标识 |
+|------|------|------|------|
+| POST | `/v1/payments/coupons/preview` | JWT | `[NEW]` |
+| POST | `/v1/payments/orders` | JWT | `[CHANGED]` |
+| GET | `/v1/payments/orders` | JWT | |
+| GET | `/v1/payments/orders/:order_no` | JWT | `[CHANGED]` |
+| POST | `/v1/payments/orders/:order_no/close` | JWT | |
+| POST | `/v1/payments/wechat/notify` | 无（微信服务器） | |
+| POST | `/v1/payments/dev/simulate-pay` | JWT（仅 `dev_mode`） | |
 
-**创建订单** `POST /v1/payments/orders`：
+**优惠券试算** `[NEW]` `POST /v1/payments/coupons/preview`：
 
 ```json
 {
   "product_type": "membership_renew",
   "days": 365,
-  "pay_channel": "wechat_native"
+  "coupon_code": "SAVE500"
+}
+```
+
+成功响应：
+
+```json
+{
+  "code": 0,
+  "data": {
+    "coupon_code": "SAVE500",
+    "original_amount": 9900,
+    "discount_amount": 500,
+    "final_amount": 9400,
+    "currency": "CNY"
+  }
+}
+```
+
+说明：仅试算，不写订单、不锁券；`coupon_code` 大小写不敏感。
+
+**创建订单** `[CHANGED]` `POST /v1/payments/orders`：
+
+```json
+{
+  "product_type": "membership_renew",
+  "days": 365,
+  "pay_channel": "wechat_native",
+  "coupon_code": "SAVE500"
 }
 ```
 
 - `pay_channel` 可省略，默认 `wechat_native`
+- `coupon_code` 可省略；传入后按折后价调用微信 prepay
 - `days` 可省略，默认 `365`；金额由服务端 `wechat_pay.membership_price_fen` 决定
 - Native 返回 `code_url`（生成二维码）；H5 返回 `h5_url`（页面跳转）
+- 响应含 `original_amount`（原价）、`discount_amount`（优惠额）、`amount`（实付）；有券时含 `coupon_code`
+- 关单后释放券占用；支付成功后核销
 
-**查询订单** `GET /v1/payments/orders/:order_no`：支付成功后 `status=paid`，并返回 `membership_expires_at`。
+**查询订单** `[CHANGED]` `GET /v1/payments/orders/:order_no`：支付成功后 `status=paid`，并返回 `membership_expires_at`；含优惠券字段同上。
+
+**优惠券数据表：** 迁移 `005_coupons.sql`；券码、折扣类型（`fixed` 固定减价 / `percent` 折扣百分比）、有效期、总量与每人次数等由 `coupons` 表配置，见 [docs/API_TEST.md](docs/API_TEST.md) 第七节。
 
 本地联调与完整 curl 见 **[docs/API_TEST.md](docs/API_TEST.md) 第七节**。
 

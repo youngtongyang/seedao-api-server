@@ -24,6 +24,35 @@ type createPaymentOrderRequest struct {
 	ProductType string `json:"product_type"`
 	Days        int    `json:"days"`
 	PayChannel  string `json:"pay_channel"`
+	CouponCode  string `json:"coupon_code"`
+}
+
+type previewCouponRequest struct {
+	ProductType string `json:"product_type"`
+	Days        int    `json:"days"`
+	CouponCode  string `json:"coupon_code"`
+}
+
+func (h *PaymentHandler) PreviewCoupon(c echo.Context) error {
+	userID, ok := middleware.UserIDFromContext(c)
+	if !ok {
+		return response.Fail(c, http.StatusUnauthorized, 40100)
+	}
+
+	var req previewCouponRequest
+	if err := c.Bind(&req); err != nil || req.CouponCode == "" {
+		return response.Fail(c, http.StatusBadRequest, errcode.InvalidParam)
+	}
+
+	result, err := h.payment.PreviewCoupon(userID, service.CouponQuoteInput{
+		ProductType: req.ProductType,
+		Days:        req.Days,
+		CouponCode:  req.CouponCode,
+	})
+	if err != nil {
+		return mapServiceError(c, err)
+	}
+	return response.OK(c, result)
 }
 
 func (h *PaymentHandler) CreateOrder(c echo.Context) error {
@@ -42,6 +71,7 @@ func (h *PaymentHandler) CreateOrder(c echo.Context) error {
 		Days:        req.Days,
 		PayChannel:  req.PayChannel,
 		ClientIP:    c.RealIP(),
+		CouponCode:  req.CouponCode,
 	})
 	if err != nil {
 		return mapServiceError(c, err)

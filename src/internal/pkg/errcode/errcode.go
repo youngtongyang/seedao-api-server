@@ -12,6 +12,10 @@ const (
 	PaymentOrderNotFound = 40007
 	PaymentOrderInvalid  = 40008
 	PhoneNotRegistered   = 40009
+	CouponInvalid        = 40010
+	CouponNotApplicable  = 40011
+	CouponUsageExceeded  = 40012
+	CouponAmountTooLow   = 40013
 	InternalError       = 50000
 )
 
@@ -27,6 +31,10 @@ var messages = map[int]string{
 	PaymentOrderNotFound: "payment order not found",
 	PaymentOrderInvalid:  "payment order invalid",
 	PhoneNotRegistered:   "phone not registered",
+	CouponInvalid:        "coupon invalid",
+	CouponNotApplicable:  "coupon not applicable",
+	CouponUsageExceeded:  "coupon usage exceeded",
+	CouponAmountTooLow:   "coupon discount too large",
 	InternalError:      "internal server error",
 }
 
