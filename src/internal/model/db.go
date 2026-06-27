@@ -43,5 +43,9 @@ func AutoMigrate(db *gorm.DB) error {
 		&PaymentRefund{},
 		&Coupon{},
 		&CouponRedemption{},
+		&Course{},
+		&CourseSKU{},
+		&CourseDiscountRule{},
+		&CourseEnrollment{},
 	)
 }

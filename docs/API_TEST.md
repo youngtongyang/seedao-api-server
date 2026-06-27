@@ -8,11 +8,13 @@
 
 | 接口 | 标识 | 说明 |
 |------|------|------|
-| `POST /v1/payments/coupons/preview` | `[NEW]` | 优惠券试算，需 JWT |
-| `POST /v1/payments/orders` | `[CHANGED]` | 可选 `coupon_code`；响应含 `original_amount`、`discount_amount` |
-| `GET /v1/payments/orders/:order_no` | `[CHANGED]` | 响应含优惠券字段 |
+| `POST /v1/payments/coupons/preview` | `[NEW]` | 会员券试算，JWT 可选 |
+| `POST /v1/payments/orders` | `[CHANGED]` | 仅 membership + 可选 coupon_code |
+| `POST /v1/courses/checkout/preview` | `[NEW]` | 课程价格试算 |
+| `POST /v1/courses/orders` | `[NEW]` | 课程下单，无主单返回 order_token |
+| `GET/POST /v1/courses/orders/*` | `[NEW]` | 查单、关单、认领 |
 
-### API 变更一览（v2.5）
+### API 变更一览（v2.5，历史）
 
 | 接口 | 标识 | 说明 |
 |------|------|------|
@@ -36,8 +38,6 @@
 | `CODE` | 短信验证码（6 位，5 分钟有效，一次性） | `301160` |
 | `TOKEN` | 注册/登录返回的 JWT | `eyJhbG...` |
 | `SNS_NAME` | SNS 名，必须为 `{base}.seedao` | `alice_test_123.seedao` |
-| `COUPON_CODE` | 优惠券码（大小写不敏感） | `SAVE500` |
-| `ORDER_NO` | 创建订单返回的 `order_no` | `M202606201430001234` |
 
 > **SNS 命名规范：** 所有接口入参/出参字段统一为 `sns_name`，且必须带 `.seedao` 后缀（与 `sns_chain_registry` 一致）。
 
@@ -313,7 +313,7 @@ curl -X POST http://127.0.0.1:8080/v1/auth/register \
 
 ---
 
-## 七、会员微信支付（需 JWT）
+## 七、会员微信支付（需 JWT）`[NEW]`
 
 支持两种支付渠道，通过创建订单时的 `pay_channel` 区分：
 
@@ -324,64 +324,25 @@ curl -X POST http://127.0.0.1:8080/v1/auth/register \
 
 本地默认 `wechat_pay.dev_mode: true`（未配置商户号时自动开启），可用模拟支付接口联调；生产环境需配置真实微信商户参数并将 `dev_mode` 设为 `false`。
 
+**测试变量补充：**
+
+| 变量 | 说明 |
+|------|------|
+| `ORDER_NO` | 创建订单返回的 `order_no` |
+| `ORDER_TOKEN` | 无主课程订单创建时返回，仅一次 |
+| `COURSE_ID` / `SKU_ID` | 课程与票种 ID（见库表配置） |
+
 **价格说明：** 默认年费 `9900` 分（99 元），由服务端 `wechat_pay.membership_price_fen` 配置，前端不传金额。
 
-**优惠券错误码：**
+**前端选渠道示例：**
 
-| code | 含义 |
-|------|------|
-| 40010 | 优惠券无效（不存在 / 过期 / 已停用） |
-| 40011 | 优惠券不适用（商品类型 / 最低消费不符） |
-| 40012 | 已达总量或每人使用上限 |
-| 40013 | 优惠后实付低于 1 分（微信不支持 0 元单） |
-
-**本地插入测试券（PostgreSQL，执行迁移 `005_coupons.sql` 后）：**
-
-```sql
-INSERT INTO coupons (
-  code, discount_type, discount_value, product_type,
-  min_amount_fen, max_total_uses, max_uses_per_user,
-  valid_from, valid_until, status, created_at, updated_at
-) VALUES (
-  'SAVE500', 'fixed', 500, 'membership_renew',
-  0, NULL, 1,
-  NOW() - INTERVAL '1 day', NOW() + INTERVAL '365 days', 'active', NOW(), NOW()
-);
+```javascript
+const payChannel = /Mobile|Android|iPhone/i.test(navigator.userAgent)
+  ? 'wechat_h5'
+  : 'wechat_native'
 ```
 
-`discount_type`：`fixed` = 固定减价（分）；`percent` = 折扣百分比（如 `10` 表示 9 折）。
-
-### 13. 优惠券试算 `[NEW]`
-
-结账页输入优惠码后调用，**不写订单、不锁券**。
-
-```bash
-curl -X POST http://127.0.0.1:8080/v1/payments/coupons/preview \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <TOKEN>" \
-  -d '{
-    "product_type": "membership_renew",
-    "days": 365,
-    "coupon_code": "SAVE500"
-  }'
-```
-
-成功预期：
-
-```json
-{
-  "code": 0,
-  "data": {
-    "coupon_code": "SAVE500",
-    "original_amount": 9900,
-    "discount_amount": 500,
-    "final_amount": 9400,
-    "currency": "CNY"
-  }
-}
-```
-
-### 14. 创建支付订单 `[CHANGED]`
+### 14. 创建支付订单
 
 用户点击「立即续费」后调用。
 
@@ -400,44 +361,7 @@ curl -X POST http://127.0.0.1:8080/v1/payments/orders \
 
 `pay_channel` 可省略，默认 `wechat_native`。
 
-**带优惠券创建订单：**
-
-```bash
-curl -X POST http://127.0.0.1:8080/v1/payments/orders \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <TOKEN>" \
-  -d '{
-    "product_type": "membership_renew",
-    "pay_channel": "wechat_native",
-    "coupon_code": "SAVE500"
-  }'
-```
-
-成功预期（含优惠券字段）：
-
-```json
-{
-  "code": 0,
-  "data": {
-    "order_no": "M202606201430001234",
-    "product_type": "membership_renew",
-    "product_days": 365,
-    "pay_channel": "wechat_native",
-    "original_amount": 9900,
-    "discount_amount": 500,
-    "coupon_code": "SAVE500",
-    "amount": 9400,
-    "currency": "CNY",
-    "status": "pending",
-    "code_url": "weixin://wxpay/bizpayurl?pr=xxxxx",
-    "expired_at": "2026-06-20T14:45:00Z"
-  }
-}
-```
-
-无优惠券时 `original_amount` 等于 `amount`，`discount_amount` 为 `0`，无 `coupon_code`。
-
-成功预期（无优惠券）：
+成功预期：
 
 ```json
 {
@@ -492,15 +416,7 @@ curl -X POST http://127.0.0.1:8080/v1/payments/orders \
 
 `days` 可省略，默认 `365`。非 365 天时金额按年费比例折算。
 
-**前端选渠道示例：**
-
-```javascript
-const payChannel = /Mobile|Android|iPhone/i.test(navigator.userAgent)
-  ? 'wechat_h5'
-  : 'wechat_native'
-```
-
-### 15. 查询订单状态（前端轮询）`[CHANGED]`
+### 15. 查询订单状态（前端轮询）
 
 ```bash
 curl http://127.0.0.1:8080/v1/payments/orders/<ORDER_NO> \
@@ -509,7 +425,7 @@ curl http://127.0.0.1:8080/v1/payments/orders/<ORDER_NO> \
 
 `status=pending` 时响应仍包含 `code_url`（Native）或 `h5_url`（H5），便于用户刷新页面后继续支付。
 
-支付成功后 `status=paid`，并返回 `membership_expires_at`、`paid_at`、`wx_transaction_id`。若使用了优惠券，响应同样包含 `original_amount`、`discount_amount`、`coupon_code`。
+支付成功后 `status=paid`，并返回 `membership_expires_at`、`paid_at`、`wx_transaction_id`。
 
 ### 16. 订单列表
 
@@ -520,7 +436,7 @@ curl "http://127.0.0.1:8080/v1/payments/orders?limit=20" \
 
 ### 17. 关闭未支付订单
 
-用户取消或二维码过期时。**若订单使用了优惠券，关单后会释放券占用，可再次下单使用。**
+用户取消或二维码过期时：
 
 ```bash
 curl -X POST http://127.0.0.1:8080/v1/payments/orders/<ORDER_NO>/close \
@@ -549,34 +465,6 @@ curl -X POST http://127.0.0.1:8080/v1/payments/dev/simulate-pay \
 ```
 
 成功预期：`status=paid`，并返回更新后的 `membership_expires_at`。
-
-### 会员续费完整联调流程（dev_mode，含优惠券）
-
-```bash
-# Step 1: 登录获取 TOKEN
-
-# Step 2: 试算优惠券（可选）
-curl -X POST http://127.0.0.1:8080/v1/payments/coupons/preview \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <TOKEN>" \
-  -d '{"product_type":"membership_renew","coupon_code":"SAVE500"}'
-
-# Step 3: 创建带券订单
-curl -X POST http://127.0.0.1:8080/v1/payments/orders \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <TOKEN>" \
-  -d '{"product_type":"membership_renew","pay_channel":"wechat_native","coupon_code":"SAVE500"}'
-
-# Step 4: dev_mode 下模拟支付
-curl -X POST http://127.0.0.1:8080/v1/payments/dev/simulate-pay \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <TOKEN>" \
-  -d '{"order_no":"<ORDER_NO>"}'
-
-# Step 5: 确认订单 amount=9400、会员已续期
-curl http://127.0.0.1:8080/v1/payments/orders/<ORDER_NO> \
-  -H "Authorization: Bearer <TOKEN>"
-```
 
 ### 会员续费完整联调流程（dev_mode，PC Native）
 
@@ -636,9 +524,95 @@ wechat_pay:
 
 商户平台还需：**开通 H5 支付** + **配置 H5 支付域名**（需 ICP 备案）。
 
+### 20. 会员券码试算 `[NEW]`（JWT 可选）
+
+```bash
+# 未登录：验券 + 试算，不校验每人限次
+curl -X POST http://127.0.0.1:8080/v1/payments/coupons/preview \
+  -H "Content-Type: application/json" \
+  -d '{"coupon_code":"SAVE10","days":365}'
+
+# 已登录：含每人限次校验
+curl -X POST http://127.0.0.1:8080/v1/payments/coupons/preview \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <TOKEN>" \
+  -d '{"coupon_code":"SAVE10"}'
+```
+
+创建会员订单时可带 `coupon_code`：
+
+```bash
+curl -X POST http://127.0.0.1:8080/v1/payments/orders \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <TOKEN>" \
+  -d '{"product_type":"membership_renew","coupon_code":"SAVE10"}'
+```
+
 ---
 
-## 八、推荐测试流程（新用户）
+## 八、课程售卖 `[NEW]`
+
+部署前执行迁移 `006_course_payments.sql`，并在库中配置 `courses` / `course_skus` / `course_discount_rules`。
+
+### 21. 价格试算（JWT 可选）
+
+```bash
+curl -X POST http://127.0.0.1:8080/v1/courses/checkout/preview \
+  -H "Content-Type: application/json" \
+  -d '{
+    "course_id": "course_test_spring",
+    "sku_id": "standard",
+    "channel_code": "PARTNER_X"
+  }'
+```
+
+未登录时响应含 `amount_if_member` 与 `member_discount.hint`（「登录后可享」）。
+
+### 22. 创建课程订单（无主，无需 JWT）
+
+```bash
+curl -X POST http://127.0.0.1:8080/v1/courses/orders \
+  -H "Content-Type: application/json" \
+  -d '{
+    "course_id": "course_test_spring",
+    "sku_id": "standard",
+    "channel_code": "PARTNER_X",
+    "pay_channel": "wechat_native"
+  }'
+```
+
+**务必保存**响应中的 `order_token`（仅返回一次）。
+
+### 23. 查单 / 关单（token）
+
+```bash
+curl "http://127.0.0.1:8080/v1/courses/orders/<ORDER_NO>?token=<ORDER_TOKEN>"
+
+curl -X POST "http://127.0.0.1:8080/v1/courses/orders/<ORDER_NO>/close" \
+  -H "Content-Type: application/json" \
+  -d '{"order_token":"<ORDER_TOKEN>"}'
+```
+
+### 24. 模拟支付（dev_mode）
+
+```bash
+curl -X POST "http://127.0.0.1:8080/v1/courses/dev/orders/<ORDER_NO>/simulate-pay" \
+  -H "Content-Type: application/json" \
+  -d '{"order_token":"<ORDER_TOKEN>"}'
+```
+
+### 25. 登录后认领订单
+
+```bash
+curl -X POST http://127.0.0.1:8080/v1/courses/orders/claim \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <TOKEN>" \
+  -d '{"order_no":"<ORDER_NO>","order_token":"<ORDER_TOKEN>"}'
+```
+
+---
+
+## 九、推荐测试流程（新用户）
 
 按顺序执行，避免验证码被提前消耗：
 
@@ -718,5 +692,5 @@ curl -X POST http://127.0.0.1:8080/v1/auth/login \
 1. 手机号必须带 `+86` 前缀，不能写 `13800138000`
 2. 验证码 5 分钟有效，验证成功后立即失效
 3. 钱包相关接口需真实 SIWE 签名，无法用随意字符串通过
-4. 会员支付：`dev_mode` 下用 `/v1/payments/dev/simulate-pay` 联调；生产需配置微信商户参数并执行 `004_payment_orders.sql`、`005_coupons.sql` 迁移；优惠券需先在 `coupons` 表插入券码
+4. 会员支付：`dev_mode` 下用 `/v1/payments/dev/simulate-pay` 联调；生产需配置微信商户参数并执行 `004_payment_orders.sql` 迁移
 5. 更多接口说明见 [README.md](../README.md)

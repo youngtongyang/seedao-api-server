@@ -16,6 +16,12 @@ const (
 	CouponNotApplicable  = 40011
 	CouponUsageExceeded  = 40012
 	CouponAmountTooLow   = 40013
+	CourseNotFound       = 40014
+	CourseOffSale        = 40015
+	CourseMemberLogin    = 40016
+	CourseOrderTokenRequired = 40017
+	CourseOrderTokenInvalid  = 40018
+	CourseOrderClaimed       = 40019
 	InternalError       = 50000
 )
 
@@ -34,7 +40,13 @@ var messages = map[int]string{
 	CouponInvalid:        "coupon invalid",
 	CouponNotApplicable:  "coupon not applicable",
 	CouponUsageExceeded:  "coupon usage exceeded",
-	CouponAmountTooLow:   "coupon discount too large",
+	CouponAmountTooLow:   "coupon amount too low",
+	CourseNotFound:       "course not found",
+	CourseOffSale:        "course off sale",
+	CourseMemberLogin:    "member discount requires login",
+	CourseOrderTokenRequired: "order token required",
+	CourseOrderTokenInvalid:  "order token invalid",
+	CourseOrderClaimed:       "order already claimed",
 	InternalError:      "internal server error",
 }
 

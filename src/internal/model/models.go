@@ -19,6 +19,7 @@ const (
 	DefaultMembershipDays = 365
 
 	ProductTypeMembershipRenew = "membership_renew"
+	ProductTypeCoursePurchase  = "course_purchase"
 
 	PayChannelWechatNative = "wechat_native"
 	PayChannelWechatH5     = "wechat_h5"
@@ -40,6 +41,15 @@ const (
 	CouponRedemptionReserved = "reserved"
 	CouponRedemptionConsumed = "consumed"
 	CouponRedemptionReleased = "released"
+
+	CourseStatusOnSale  = "on_sale"
+	CourseStatusOffSale = "off_sale"
+
+	CourseDiscountEarlyBird = "early_bird"
+	CourseDiscountMember    = "member"
+	CourseDiscountChannel   = "channel"
+
+	CourseEnrollmentActive = "active"
 
 	MinPaymentAmountFen = 1
 )
@@ -107,26 +117,31 @@ type SMSSendLog struct {
 func (SMSSendLog) TableName() string { return "sms_send_logs" }
 
 type PaymentOrder struct {
-	ID              int64      `gorm:"primaryKey"`
-	OrderNo         string     `gorm:"size:64;uniqueIndex;not null"`
-	UserID          int64      `gorm:"index;not null"`
-	ProductType     string     `gorm:"size:32;not null"`
-	ProductDays     int        `gorm:"not null;default:365"`
-	OriginalAmount  int        `gorm:"not null;default:0"`
-	DiscountAmount  int        `gorm:"not null;default:0"`
-	CouponCode      *string    `gorm:"size:64"`
-	Amount          int        `gorm:"not null"`
-	Currency        string     `gorm:"size:8;not null;default:CNY"`
-	Status          string     `gorm:"size:16;not null;default:pending;index"`
-	PayChannel      string     `gorm:"size:16;not null;default:wechat_native"`
-	CodeURL         *string    `gorm:"type:text"`
-	WxTransactionID *string    `gorm:"size:64;index"`
-	PaidAt          *time.Time
-	ExpiredAt       time.Time  `gorm:"not null"`
-	ClosedAt        *time.Time
-	NotifyPayload   *string    `gorm:"type:text"`
-	CreatedAt       time.Time  `gorm:"not null"`
-	UpdatedAt       time.Time  `gorm:"not null"`
+	ID               int64      `gorm:"primaryKey"`
+	OrderNo          string     `gorm:"size:64;uniqueIndex;not null"`
+	UserID           *int64     `gorm:"index"`
+	ProductType      string     `gorm:"size:32;not null;index"`
+	ProductDays      int        `gorm:"not null;default:365"`
+	ProductRef       *string    `gorm:"type:text"`
+	OriginalAmount   int        `gorm:"not null;default:0"`
+	DiscountAmount   int        `gorm:"not null;default:0"`
+	CouponCode       *string    `gorm:"size:64"`
+	DiscountSnapshot *string    `gorm:"type:text"`
+	ChannelCode      *string    `gorm:"size:64"`
+	OrderTokenHash   *string    `gorm:"size:64;index"`
+	IsAnonymous      bool       `gorm:"not null;default:false"`
+	Amount           int        `gorm:"not null"`
+	Currency         string     `gorm:"size:8;not null;default:CNY"`
+	Status           string     `gorm:"size:16;not null;default:pending;index"`
+	PayChannel       string     `gorm:"size:16;not null;default:wechat_native"`
+	CodeURL          *string    `gorm:"type:text"`
+	WxTransactionID  *string    `gorm:"size:64;index"`
+	PaidAt           *time.Time
+	ExpiredAt        time.Time `gorm:"not null"`
+	ClosedAt         *time.Time
+	NotifyPayload    *string   `gorm:"type:text"`
+	CreatedAt        time.Time `gorm:"not null"`
+	UpdatedAt        time.Time `gorm:"not null"`
 }
 
 func (PaymentOrder) TableName() string { return "payment_orders" }
@@ -147,20 +162,20 @@ type PaymentRefund struct {
 func (PaymentRefund) TableName() string { return "payment_refunds" }
 
 type Coupon struct {
-	ID               int64     `gorm:"primaryKey"`
-	Code             string    `gorm:"size:64;uniqueIndex;not null"`
-	DiscountType     string    `gorm:"size:16;not null;default:fixed"`
-	DiscountValue    int       `gorm:"not null"`
-	ProductType      *string   `gorm:"size:32"`
-	MinAmountFen     int       `gorm:"not null;default:0"`
-	MaxTotalUses     *int
-	UsedCount        int       `gorm:"not null;default:0"`
-	MaxUsesPerUser   int       `gorm:"not null;default:1"`
-	ValidFrom        time.Time `gorm:"not null"`
-	ValidUntil       time.Time `gorm:"not null"`
-	Status           string    `gorm:"size:16;not null;default:active"`
-	CreatedAt        time.Time `gorm:"not null"`
-	UpdatedAt        time.Time `gorm:"not null"`
+	ID             int64     `gorm:"primaryKey"`
+	Code           string    `gorm:"size:64;uniqueIndex;not null"`
+	DiscountType   string    `gorm:"size:16;not null;default:fixed"`
+	DiscountValue  int       `gorm:"not null"`
+	ProductType    *string   `gorm:"size:32"`
+	MinAmountFen   int       `gorm:"not null;default:0"`
+	MaxTotalUses   *int
+	UsedCount      int       `gorm:"not null;default:0"`
+	MaxUsesPerUser int       `gorm:"not null;default:1"`
+	ValidFrom      time.Time `gorm:"not null"`
+	ValidUntil     time.Time `gorm:"not null"`
+	Status         string    `gorm:"size:16;not null;default:active"`
+	CreatedAt      time.Time `gorm:"not null"`
+	UpdatedAt      time.Time `gorm:"not null"`
 }
 
 func (Coupon) TableName() string { return "coupons" }
@@ -178,3 +193,56 @@ type CouponRedemption struct {
 }
 
 func (CouponRedemption) TableName() string { return "coupon_redemptions" }
+
+type Course struct {
+	ID        string    `gorm:"primaryKey;size:64"`
+	Title     string    `gorm:"size:256;not null"`
+	Status    string    `gorm:"size:16;not null;default:on_sale"`
+	CreatedAt time.Time `gorm:"not null"`
+	UpdatedAt time.Time `gorm:"not null"`
+}
+
+func (Course) TableName() string { return "courses" }
+
+type CourseSKU struct {
+	ID           int64     `gorm:"primaryKey"`
+	CourseID     string    `gorm:"size:64;not null;index"`
+	SKUID        string    `gorm:"column:sku_id;size:64;not null"`
+	Name         string    `gorm:"size:128;not null"`
+	BasePriceFen int       `gorm:"not null"`
+	Status       string    `gorm:"size:16;not null;default:on_sale"`
+	CreatedAt    time.Time `gorm:"not null"`
+	UpdatedAt    time.Time `gorm:"not null"`
+}
+
+func (CourseSKU) TableName() string { return "course_skus" }
+
+type CourseDiscountRule struct {
+	ID            int64      `gorm:"primaryKey"`
+	CourseID      string     `gorm:"size:64;not null;index"`
+	SKUID         string     `gorm:"column:sku_id;size:64;not null"`
+	RuleType      string     `gorm:"size:16;not null"`
+	DiscountType  string     `gorm:"size:16;not null;default:fixed"`
+	DiscountValue int        `gorm:"not null"`
+	ChannelCode   *string    `gorm:"size:64"`
+	ValidFrom     *time.Time
+	ValidUntil    *time.Time
+	Status        string     `gorm:"size:16;not null;default:active"`
+	CreatedAt     time.Time  `gorm:"not null"`
+	UpdatedAt     time.Time  `gorm:"not null"`
+}
+
+func (CourseDiscountRule) TableName() string { return "course_discount_rules" }
+
+type CourseEnrollment struct {
+	ID        int64     `gorm:"primaryKey"`
+	OrderID   int64     `gorm:"uniqueIndex;not null"`
+	UserID    *int64    `gorm:"index"`
+	CourseID  string    `gorm:"size:64;not null;index"`
+	SKUID     string    `gorm:"column:sku_id;size:64;not null"`
+	Status    string    `gorm:"size:16;not null;default:active"`
+	CreatedAt time.Time `gorm:"not null"`
+	UpdatedAt time.Time `gorm:"not null"`
+}
+
+func (CourseEnrollment) TableName() string { return "course_enrollments" }

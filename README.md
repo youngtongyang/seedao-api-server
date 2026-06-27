@@ -1,6 +1,6 @@
 # seedao-api-server
 
-SeeDAO 2.0 用户认证与 SNS 服务 API（v2.5）。
+SeeDAO 2.0 用户认证与 SNS 服务 API（v2.6）。
 
 面向 Web / H5 客户端，提供手机号验证码注册/登录、SNS 名称校验与预留、老用户钱包认领链上 SNS、个人 Profile、首页用户统计、会员微信支付等能力。运行时零链上 RPC 依赖。
 
@@ -75,11 +75,16 @@ cp config.local.example.yaml config.local.yaml
 
 | 接口 | 鉴权 | 标识 | 说明 |
 |------|------|------|------|
-| `POST /v1/payments/coupons/preview` | JWT | `[NEW]` | 优惠券试算（原价 / 优惠 / 实付） |
-| `POST /v1/payments/orders` | JWT | `[CHANGED]` | 可选 `coupon_code`，响应增加 `original_amount`、`discount_amount` |
-| `GET /v1/payments/orders/:order_no` | JWT | `[CHANGED]` | 响应增加 `original_amount`、`discount_amount`、`coupon_code` |
+| `POST /v1/payments/coupons/preview` | JWT 可选 | `[NEW]` | 会员续费券码试算；未登录不做每人限次校验 |
+| `POST /v1/payments/orders` | JWT 必填 | `[CHANGED]` | **仅** `membership_renew`；支持 `coupon_code` |
+| `POST /v1/courses/checkout/preview` | JWT 可选 | `[NEW]` | 课程价格试算（早鸟+渠道+会员预览） |
+| `POST /v1/courses/orders` | JWT 条件必填 | `[NEW]` | 课程下单；无主订单返回 `order_token` |
+| `GET /v1/courses/orders/:order_no` | JWT 或 token | `[NEW]` | 查课程订单 |
+| `POST /v1/courses/orders/:order_no/close` | JWT 或 token | `[NEW]` | 关闭课程订单 |
+| `POST /v1/courses/orders/claim` | JWT 必填 | `[NEW]` | 登录后认领无主订单 |
+| `POST /v1/courses/dev/orders/:order_no/simulate-pay` | JWT 或 token | `[NEW]` | 模拟课程支付（仅 `dev_mode`） |
 
-### API 变更一览（v2.5）
+### API 变更一览（v2.5，历史）
 
 | 接口 | 鉴权 | 标识 | 说明 |
 |------|------|------|------|
@@ -116,10 +121,16 @@ cp config.local.example.yaml config.local.yaml
 | 40007 | 支付订单不存在或无权访问 |
 | 40008 | 支付订单状态无效 |
 | 40009 | 手机号未注册（可注册） |
-| 40010 | 优惠券无效（不存在 / 过期 / 已停用） |
-| 40011 | 优惠券不适用（商品 / 最低消费不符） |
-| 40012 | 优惠券已达使用上限 |
-| 40013 | 优惠后金额过低（微信最低 1 分） |
+| 40010 | 优惠券无效 |
+| 40011 | 优惠券不适用 |
+| 40012 | 优惠券使用次数超限 |
+| 40013 | 优惠后金额过低 |
+| 40014 | 课程不存在 |
+| 40015 | 课程未在售 |
+| 40016 | 会员折扣需登录 |
+| 40017 | 订单 token 必填 |
+| 40018 | 订单 token 无效 |
+| 40019 | 订单已被认领 |
 | 42901 | 发送过于频繁 |
 | 50000 | 服务器内部错误 |
 
@@ -396,68 +407,54 @@ curl https://api.seedao.xyz/v1/stats/user-count
 
 ### 11. 会员微信支付
 
-以下接口均需 JWT（微信回调除外）。`pay_channel` 支持 `wechat_native`（PC 扫码）与 `wechat_h5`（手机浏览器）。
+| 方法 | 路径 | 鉴权 |
+|------|------|------|
+| POST | `/v1/payments/coupons/preview` | JWT 可选 `[NEW]` |
+| POST | `/v1/payments/orders` | JWT 必填（仅 `membership_renew`） |
+| GET | `/v1/payments/orders` | JWT |
+| GET | `/v1/payments/orders/:order_no` | JWT |
+| POST | `/v1/payments/orders/:order_no/close` | JWT |
+| POST | `/v1/payments/wechat/notify` | 无（微信服务器） |
+| POST | `/v1/payments/dev/simulate-pay` | JWT（仅 `dev_mode`） |
 
-| 方法 | 路径 | 鉴权 | 标识 |
-|------|------|------|------|
-| POST | `/v1/payments/coupons/preview` | JWT | `[NEW]` |
-| POST | `/v1/payments/orders` | JWT | `[CHANGED]` |
-| GET | `/v1/payments/orders` | JWT | |
-| GET | `/v1/payments/orders/:order_no` | JWT | `[CHANGED]` |
-| POST | `/v1/payments/orders/:order_no/close` | JWT | |
-| POST | `/v1/payments/wechat/notify` | 无（微信服务器） | |
-| POST | `/v1/payments/dev/simulate-pay` | JWT（仅 `dev_mode`） | |
+**券码试算** `POST /v1/payments/coupons/preview`：未登录可验券与试算；登录后额外校验每人限次。
 
-**优惠券试算** `[NEW]` `POST /v1/payments/coupons/preview`：
-
-```json
-{
-  "product_type": "membership_renew",
-  "days": 365,
-  "coupon_code": "SAVE500"
-}
-```
-
-成功响应：
-
-```json
-{
-  "code": 0,
-  "data": {
-    "coupon_code": "SAVE500",
-    "original_amount": 9900,
-    "discount_amount": 500,
-    "final_amount": 9400,
-    "currency": "CNY"
-  }
-}
-```
-
-说明：仅试算，不写订单、不锁券；`coupon_code` 大小写不敏感。
-
-**创建订单** `[CHANGED]` `POST /v1/payments/orders`：
+**创建订单** `POST /v1/payments/orders`：
 
 ```json
 {
   "product_type": "membership_renew",
   "days": 365,
   "pay_channel": "wechat_native",
-  "coupon_code": "SAVE500"
+  "coupon_code": "SAVE10"
 }
 ```
 
-- `pay_channel` 可省略，默认 `wechat_native`
-- `coupon_code` 可省略；传入后按折后价调用微信 prepay
-- `days` 可省略，默认 `365`；金额由服务端 `wechat_pay.membership_price_fen` 决定
-- Native 返回 `code_url`（生成二维码）；H5 返回 `h5_url`（页面跳转）
-- 响应含 `original_amount`（原价）、`discount_amount`（优惠额）、`amount`（实付）；有券时含 `coupon_code`
-- 关单后释放券占用；支付成功后核销
+- 仅接受 `membership_renew`；`coupon_code` 可选
+- Native 返回 `code_url`；H5 返回 `h5_url`
 
-**查询订单** `[CHANGED]` `GET /v1/payments/orders/:order_no`：支付成功后 `status=paid`，并返回 `membership_expires_at`；含优惠券字段同上。
+本地联调见 **[docs/API_TEST.md](docs/API_TEST.md) 第七节**。
 
-**优惠券数据表：** 迁移 `005_coupons.sql`；券码、折扣类型（`fixed` 固定减价 / `percent` 折扣百分比）、有效期、总量与每人次数等由 `coupons` 表配置，见 [docs/API_TEST.md](docs/API_TEST.md) 第七节。
+---
 
-本地联调与完整 curl 见 **[docs/API_TEST.md](docs/API_TEST.md) 第七节**。
+### 12. 课程售卖 `[NEW]`
+
+| 方法 | 路径 | 鉴权 |
+|------|------|------|
+| POST | `/v1/courses/checkout/preview` | JWT 可选 |
+| POST | `/v1/courses/orders` | JWT 条件必填（会员折扣需登录） |
+| GET | `/v1/courses/orders/:order_no` | JWT 或 `?token=` |
+| POST | `/v1/courses/orders/:order_no/close` | JWT 或 body `order_token` |
+| POST | `/v1/courses/orders/claim` | JWT |
+| POST | `/v1/courses/dev/orders/:order_no/simulate-pay` | JWT 或 token（仅 `dev_mode`） |
+
+未登录下单为**无主订单**：响应含 `order_token`（仅返回一次），前端须保存；查单/关单需 `order_no + order_token`。
+
+折扣：**早鸟 + 渠道 + 会员**可叠加；未登录 preview 返回 `amount_if_member` 与「登录后可享」提示。
+
+课程配置写入 `courses` / `course_skus` / `course_discount_rules` 表（见迁移 `006_course_payments.sql`）。
+
+本地联调见 **[docs/API_TEST.md](docs/API_TEST.md) 第八节**。
 
 ---
 

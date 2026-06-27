@@ -12,10 +12,10 @@ import (
 )
 
 var (
-	ErrCouponInvalid         = errors.New("coupon invalid")
-	ErrCouponNotApplicable   = errors.New("coupon not applicable")
-	ErrCouponUsageExceeded   = errors.New("coupon usage exceeded")
-	ErrCouponAmountTooLow    = errors.New("coupon amount too low")
+	ErrCouponInvalid       = errors.New("coupon invalid")
+	ErrCouponNotApplicable = errors.New("coupon not applicable")
+	ErrCouponUsageExceeded = errors.New("coupon usage exceeded")
+	ErrCouponAmountTooLow  = errors.New("coupon amount too low")
 )
 
 type CouponService struct {
@@ -28,6 +28,7 @@ func NewCouponService(db *gorm.DB) *CouponService {
 
 type CouponQuoteInput struct {
 	UserID      int64
+	UserKnown   bool
 	ProductType string
 	Days        int
 	CouponCode  string
@@ -170,7 +171,7 @@ func (s *CouponService) resolveDiscount(input CouponQuoteInput, originalAmount i
 		return 0, nil, ErrCouponNotApplicable
 	}
 
-	if err := s.checkUsageLimits(db, &coupon, input.UserID); err != nil {
+	if err := s.checkUsageLimits(db, &coupon, input); err != nil {
 		return 0, nil, err
 	}
 
@@ -182,7 +183,7 @@ func (s *CouponService) resolveDiscount(input CouponQuoteInput, originalAmount i
 	return discount, &coupon, nil
 }
 
-func (s *CouponService) checkUsageLimits(db *gorm.DB, coupon *model.Coupon, userID int64) error {
+func (s *CouponService) checkUsageLimits(db *gorm.DB, coupon *model.Coupon, input CouponQuoteInput) error {
 	var activeTotal int64
 	if err := db.Model(&model.CouponRedemption{}).
 		Where("coupon_id = ? AND status IN ?", coupon.ID, []string{
@@ -196,9 +197,13 @@ func (s *CouponService) checkUsageLimits(db *gorm.DB, coupon *model.Coupon, user
 		return ErrCouponUsageExceeded
 	}
 
+	if !input.UserKnown || input.UserID == 0 {
+		return nil
+	}
+
 	var userUses int64
 	if err := db.Model(&model.CouponRedemption{}).
-		Where("coupon_id = ? AND user_id = ? AND status IN ?", coupon.ID, userID, []string{
+		Where("coupon_id = ? AND user_id = ? AND status IN ?", coupon.ID, input.UserID, []string{
 			model.CouponRedemptionReserved,
 			model.CouponRedemptionConsumed,
 		}).

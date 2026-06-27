@@ -11,6 +11,7 @@ import (
 )
 
 const userIDKey = "user_id"
+const userKnownKey = "user_known"
 
 func JWT(jwtMgr *jwtutil.Manager) echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
@@ -27,6 +28,23 @@ func JWT(jwtMgr *jwtutil.Manager) echo.MiddlewareFunc {
 			}
 
 			c.Set(userIDKey, userID)
+			c.Set(userKnownKey, true)
+			return next(c)
+		}
+	}
+}
+
+func OptionalJWT(jwtMgr *jwtutil.Manager) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			auth := c.Request().Header.Get("Authorization")
+			if auth != "" && strings.HasPrefix(auth, "Bearer ") {
+				token := strings.TrimPrefix(auth, "Bearer ")
+				if userID, err := jwtMgr.Parse(token); err == nil {
+					c.Set(userIDKey, userID)
+					c.Set(userKnownKey, true)
+				}
+			}
 			return next(c)
 		}
 	}
@@ -35,4 +53,9 @@ func JWT(jwtMgr *jwtutil.Manager) echo.MiddlewareFunc {
 func UserIDFromContext(c echo.Context) (int64, bool) {
 	v, ok := c.Get(userIDKey).(int64)
 	return v, ok
+}
+
+func UserKnownFromContext(c echo.Context) bool {
+	v, ok := c.Get(userKnownKey).(bool)
+	return ok && v
 }

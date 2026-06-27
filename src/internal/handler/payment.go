@@ -34,17 +34,19 @@ type previewCouponRequest struct {
 }
 
 func (h *PaymentHandler) PreviewCoupon(c echo.Context) error {
-	userID, ok := middleware.UserIDFromContext(c)
-	if !ok {
-		return response.Fail(c, http.StatusUnauthorized, 40100)
-	}
-
 	var req previewCouponRequest
 	if err := c.Bind(&req); err != nil || req.CouponCode == "" {
 		return response.Fail(c, http.StatusBadRequest, errcode.InvalidParam)
 	}
 
-	result, err := h.payment.PreviewCoupon(userID, service.CouponQuoteInput{
+	userID, userKnown := middleware.UserIDFromContext(c)
+	if !userKnown {
+		userID = 0
+	}
+
+	result, err := h.payment.PreviewCoupon(service.CouponQuoteInput{
+		UserID:      userID,
+		UserKnown:   userKnown,
 		ProductType: req.ProductType,
 		Days:        req.Days,
 		CouponCode:  req.CouponCode,

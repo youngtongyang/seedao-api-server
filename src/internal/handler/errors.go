@@ -62,6 +62,18 @@ func mapServiceError(c echo.Context, err error) error {
 		return response.Fail(c, http.StatusBadRequest, errcode.CouponUsageExceeded)
 	case errors.Is(err, service.ErrCouponAmountTooLow):
 		return response.Fail(c, http.StatusBadRequest, errcode.CouponAmountTooLow)
+	case errors.Is(err, service.ErrCourseNotFound), errors.Is(err, service.ErrCourseSKUNotFound):
+		return response.Fail(c, http.StatusBadRequest, errcode.CourseNotFound)
+	case errors.Is(err, service.ErrCourseOffSale):
+		return response.Fail(c, http.StatusBadRequest, errcode.CourseOffSale)
+	case errors.Is(err, service.ErrCourseMemberDiscountRequiresLogin):
+		return response.Fail(c, http.StatusUnauthorized, errcode.CourseMemberLogin)
+	case errors.Is(err, service.ErrCourseOrderTokenRequired):
+		return response.Fail(c, http.StatusBadRequest, errcode.CourseOrderTokenRequired)
+	case errors.Is(err, service.ErrCourseOrderTokenInvalid):
+		return response.Fail(c, http.StatusForbidden, errcode.CourseOrderTokenInvalid)
+	case errors.Is(err, service.ErrCourseOrderAlreadyClaimed):
+		return response.Fail(c, http.StatusBadRequest, errcode.CourseOrderClaimed)
 	default:
 		c.Logger().Error(err)
 		if middleware.IsDebug(c) {

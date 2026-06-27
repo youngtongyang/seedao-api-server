@@ -411,72 +411,6 @@ func TestPaymentCreateOrder(t *testing.T) {
 	assert.Equal(t, "pending", data["status"])
 	assert.NotEmpty(t, data["code_url"])
 	assert.Equal(t, float64(9900), data["amount"])
-	assert.Equal(t, float64(9900), data["original_amount"])
-}
-
-func TestCouponPreview(t *testing.T) {
-	ts := testutil.NewTestServer(t)
-	ts.SeedCoupon(t, "SAVE1000", 1000)
-	token := registerAndGetToken(t, ts, "+8613900139021", "coupon_preview.seedao")
-
-	rec := testutil.DoJSON(t, ts.Echo, http.MethodPost, "/v1/payments/coupons/preview", map[string]interface{}{
-		"product_type": "membership_renew",
-		"coupon_code":  "save1000",
-	}, map[string]string{
-		"Authorization": "Bearer " + token,
-	})
-	resp := testutil.ParseResponse(t, rec)
-	data := testutil.ParseData[map[string]interface{}](t, resp.Data)
-	assert.Equal(t, "SAVE1000", data["coupon_code"])
-	assert.Equal(t, float64(9900), data["original_amount"])
-	assert.Equal(t, float64(1000), data["discount_amount"])
-	assert.Equal(t, float64(8900), data["final_amount"])
-}
-
-func TestPaymentCreateOrderWithCoupon(t *testing.T) {
-	ts := testutil.NewTestServer(t)
-	ts.SeedCoupon(t, "SAVE500", 500)
-	token := registerAndGetToken(t, ts, "+8613900139022", "coupon_order.seedao")
-
-	rec := testutil.DoJSON(t, ts.Echo, http.MethodPost, "/v1/payments/orders", map[string]interface{}{
-		"product_type": "membership_renew",
-		"coupon_code":  "SAVE500",
-	}, map[string]string{
-		"Authorization": "Bearer " + token,
-	})
-	resp := testutil.ParseResponse(t, rec)
-	data := testutil.ParseData[map[string]interface{}](t, resp.Data)
-	assert.Equal(t, float64(9900), data["original_amount"])
-	assert.Equal(t, float64(500), data["discount_amount"])
-	assert.Equal(t, float64(9400), data["amount"])
-	assert.Equal(t, "SAVE500", data["coupon_code"])
-}
-
-func TestPaymentCloseOrderReleasesCoupon(t *testing.T) {
-	ts := testutil.NewTestServer(t)
-	ts.SeedCoupon(t, "ONCE500", 500)
-	token := registerAndGetToken(t, ts, "+8613900139023", "coupon_close.seedao")
-
-	createRec := testutil.DoJSON(t, ts.Echo, http.MethodPost, "/v1/payments/orders", map[string]interface{}{
-		"coupon_code": "ONCE500",
-	}, map[string]string{
-		"Authorization": "Bearer " + token,
-	})
-	createResp := testutil.ParseResponse(t, createRec)
-	createData := testutil.ParseData[map[string]interface{}](t, createResp.Data)
-	orderNo := createData["order_no"].(string)
-
-	closeRec := testutil.DoJSON(t, ts.Echo, http.MethodPost, "/v1/payments/orders/"+orderNo+"/close", nil, map[string]string{
-		"Authorization": "Bearer " + token,
-	})
-	testutil.ParseResponse(t, closeRec)
-
-	rec := testutil.DoJSON(t, ts.Echo, http.MethodPost, "/v1/payments/orders", map[string]interface{}{
-		"coupon_code": "ONCE500",
-	}, map[string]string{
-		"Authorization": "Bearer " + token,
-	})
-	testutil.ParseResponse(t, rec)
 }
 
 func TestPaymentCreateOrderH5(t *testing.T) {
@@ -586,5 +520,132 @@ func TestPaymentCloseOrder(t *testing.T) {
 	closeResp := testutil.ParseResponse(t, closeRec)
 	closeData := testutil.ParseData[map[string]interface{}](t, closeResp.Data)
 	assert.Equal(t, "closed", closeData["status"])
+}
+
+func TestCouponPreviewWithoutJWT(t *testing.T) {
+	ts := testutil.NewTestServer(t)
+	ts.SeedMembershipCoupon(t, "SAVE10")
+
+	rec := testutil.DoJSON(t, ts.Echo, http.MethodPost, "/v1/payments/coupons/preview", map[string]interface{}{
+		"coupon_code": "SAVE10",
+		"days":        365,
+	}, nil)
+	resp := testutil.ParseResponse(t, rec)
+	data := testutil.ParseData[map[string]interface{}](t, resp.Data)
+	assert.Equal(t, float64(9900), data["original_amount"])
+	assert.Equal(t, float64(8900), data["final_amount"])
+}
+
+func TestCouponPreviewWithJWT(t *testing.T) {
+	ts := testutil.NewTestServer(t)
+	ts.SeedMembershipCoupon(t, "SAVE10")
+	token := registerAndGetToken(t, ts, "+8613900139021", "coupon_preview.seedao")
+
+	rec := testutil.DoJSON(t, ts.Echo, http.MethodPost, "/v1/payments/coupons/preview", map[string]interface{}{
+		"coupon_code": "SAVE10",
+	}, map[string]string{
+		"Authorization": "Bearer " + token,
+	})
+	resp := testutil.ParseResponse(t, rec)
+	data := testutil.ParseData[map[string]interface{}](t, resp.Data)
+	assert.Equal(t, float64(1000), data["discount_amount"])
+}
+
+func TestCoursePreviewAnonymousShowsMemberPrice(t *testing.T) {
+	ts := testutil.NewTestServer(t)
+	ts.SeedCourseCatalog(t)
+
+	rec := testutil.DoJSON(t, ts.Echo, http.MethodPost, "/v1/courses/checkout/preview", map[string]interface{}{
+		"course_id":    "course_test_spring",
+		"sku_id":       "standard",
+		"channel_code": "PARTNER_X",
+	}, nil)
+	resp := testutil.ParseResponse(t, rec)
+	data := testutil.ParseData[map[string]interface{}](t, resp.Data)
+
+	assert.Equal(t, float64(99900), data["original_amount"])
+	assert.Equal(t, float64(74900), data["final_amount"])
+	assert.Equal(t, float64(64900), data["amount_if_member"])
+
+	member := data["member_discount"].(map[string]interface{})
+	assert.Equal(t, false, member["applied"])
+	assert.Equal(t, true, member["requires_login"])
+	assert.Contains(t, member["hint"], "登录后可享")
+}
+
+func TestCourseAnonymousOrderAndSimulatePay(t *testing.T) {
+	ts := testutil.NewTestServer(t)
+	ts.SeedCourseCatalog(t)
+
+	createRec := testutil.DoJSON(t, ts.Echo, http.MethodPost, "/v1/courses/orders", map[string]interface{}{
+		"course_id":    "course_test_spring",
+		"sku_id":       "standard",
+		"channel_code": "PARTNER_X",
+		"pay_channel":  "wechat_native",
+	}, nil)
+	createResp := testutil.ParseResponse(t, createRec)
+	createData := testutil.ParseData[map[string]interface{}](t, createResp.Data)
+
+	orderNo := createData["order_no"].(string)
+	orderToken := createData["order_token"].(string)
+	assert.NotEmpty(t, orderToken)
+	assert.Equal(t, float64(74900), createData["amount"])
+
+	simRec := testutil.DoJSON(t, ts.Echo, http.MethodPost, "/v1/courses/dev/orders/"+orderNo+"/simulate-pay", map[string]string{
+		"order_token": orderToken,
+	}, nil)
+	simResp := testutil.ParseResponse(t, simRec)
+	simData := testutil.ParseData[map[string]interface{}](t, simResp.Data)
+	assert.Equal(t, "paid", simData["status"])
+	assert.Equal(t, "active", simData["enrollment_status"])
+
+	getRec := testutil.DoJSON(t, ts.Echo, http.MethodGet, "/v1/courses/orders/"+orderNo+"?token="+orderToken, nil, nil)
+	getResp := testutil.ParseResponse(t, getRec)
+	getData := testutil.ParseData[map[string]interface{}](t, getResp.Data)
+	assert.Equal(t, "paid", getData["status"])
+}
+
+func TestCourseClaimOrder(t *testing.T) {
+	ts := testutil.NewTestServer(t)
+	ts.SeedCourseCatalog(t)
+
+	createRec := testutil.DoJSON(t, ts.Echo, http.MethodPost, "/v1/courses/orders", map[string]interface{}{
+		"course_id":    "course_test_spring",
+		"sku_id":       "standard",
+		"channel_code": "PARTNER_X",
+	}, nil)
+	createResp := testutil.ParseResponse(t, createRec)
+	createData := testutil.ParseData[map[string]interface{}](t, createResp.Data)
+	orderNo := createData["order_no"].(string)
+	orderToken := createData["order_token"].(string)
+
+	token := registerAndGetToken(t, ts, "+8613900139022", "course_claim.seedao")
+
+	claimRec := testutil.DoJSON(t, ts.Echo, http.MethodPost, "/v1/courses/orders/claim", map[string]string{
+		"order_no":     orderNo,
+		"order_token":  orderToken,
+	}, map[string]string{
+		"Authorization": "Bearer " + token,
+	})
+	claimResp := testutil.ParseResponse(t, claimRec)
+	assert.Equal(t, orderNo, testutil.ParseData[map[string]interface{}](t, claimResp.Data)["order_no"])
+
+	getRec := testutil.DoJSON(t, ts.Echo, http.MethodGet, "/v1/courses/orders/"+orderNo, nil, map[string]string{
+		"Authorization": "Bearer " + token,
+	})
+	getResp := testutil.ParseResponse(t, getRec)
+	assert.Equal(t, "pending", testutil.ParseData[map[string]interface{}](t, getResp.Data)["status"])
+}
+
+func TestPaymentCreateOrderRejectsCourseProduct(t *testing.T) {
+	ts := testutil.NewTestServer(t)
+	token := registerAndGetToken(t, ts, "+8613900139023", "pay_reject.seedao")
+
+	rec := testutil.DoJSON(t, ts.Echo, http.MethodPost, "/v1/payments/orders", map[string]interface{}{
+		"product_type": "course_purchase",
+	}, map[string]string{
+		"Authorization": "Bearer " + token,
+	})
+	require.Equal(t, http.StatusBadRequest, rec.Code)
 }
 

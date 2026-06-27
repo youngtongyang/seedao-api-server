@@ -102,6 +102,7 @@ run_psql "$PGDATABASE" "$PGUSER" "$PGPASSWORD" -f "$ROOT_DIR/migrations/002_sns_
 run_psql "$PGDATABASE" "$PGUSER" "$PGPASSWORD" -f "$ROOT_DIR/migrations/003_user_membership.sql"
 run_psql "$PGDATABASE" "$PGUSER" "$PGPASSWORD" -f "$ROOT_DIR/migrations/004_payment_orders.sql"
 run_psql "$PGDATABASE" "$PGUSER" "$PGPASSWORD" -f "$ROOT_DIR/migrations/005_coupons.sql"
+run_psql "$PGDATABASE" "$PGUSER" "$PGPASSWORD" -f "$ROOT_DIR/migrations/006_course_payments.sql"
 
 echo "==> Step 3: import sns_chain_registry"
 PREPARED="$ROOT_DIR/migrations/data/sns_chain_registry_import.sql"

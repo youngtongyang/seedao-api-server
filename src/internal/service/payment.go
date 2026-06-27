@@ -30,20 +30,22 @@ var (
 )
 
 type PaymentService struct {
-	db       *gorm.DB
-	redis    *redisstore.Store
-	wechat   wechatpay.Client
-	cfg      config.WechatPayConfig
-	coupon   *CouponService
+	db     *gorm.DB
+	redis  *redisstore.Store
+	wechat wechatpay.Client
+	cfg    config.WechatPayConfig
+	coupon *CouponService
+	course *CourseService
 }
 
-func NewPaymentService(db *gorm.DB, redis *redisstore.Store, wechat wechatpay.Client, cfg config.WechatPayConfig, coupon *CouponService) *PaymentService {
+func NewPaymentService(db *gorm.DB, redis *redisstore.Store, wechat wechatpay.Client, cfg config.WechatPayConfig, coupon *CouponService, course *CourseService) *PaymentService {
 	return &PaymentService{
 		db:     db,
 		redis:  redis,
 		wechat: wechat,
 		cfg:    cfg,
 		coupon: coupon,
+		course: course,
 	}
 }
 
@@ -74,7 +76,7 @@ type PaymentOrderView struct {
 	WxTransactionID     string `json:"wx_transaction_id,omitempty"`
 }
 
-func (s *PaymentService) PreviewCoupon(userID int64, input CouponQuoteInput) (*CouponQuote, error) {
+func (s *PaymentService) PreviewCoupon(input CouponQuoteInput) (*CouponQuote, error) {
 	productType := input.ProductType
 	if productType == "" {
 		productType = model.ProductTypeMembershipRenew
@@ -88,7 +90,6 @@ func (s *PaymentService) PreviewCoupon(userID int64, input CouponQuoteInput) (*C
 		days = model.DefaultMembershipDays
 	}
 
-	input.UserID = userID
 	input.ProductType = productType
 	input.Days = days
 
@@ -143,7 +144,7 @@ func (s *PaymentService) CreateOrder(ctx context.Context, userID int64, input Cr
 
 	now := time.Now()
 	expiredAt := now.Add(time.Duration(s.cfg.OrderExpireMinutes) * time.Minute)
-	orderNo := generateOrderNo(userID, now)
+	orderNo := generateMembershipOrderNo(userID, now)
 
 	var payURL string
 	switch payChannel {
@@ -174,7 +175,7 @@ func (s *PaymentService) CreateOrder(ctx context.Context, userID int64, input Cr
 
 	order := model.PaymentOrder{
 		OrderNo:        orderNo,
-		UserID:         userID,
+		UserID:         &userID,
 		ProductType:    productType,
 		ProductDays:    days,
 		OriginalAmount: int(originalAmountFen),
@@ -186,6 +187,7 @@ func (s *PaymentService) CreateOrder(ctx context.Context, userID int64, input Cr
 		PayChannel:     payChannel,
 		CodeURL:        &payURL,
 		ExpiredAt:      expiredAt,
+		IsAnonymous:    false,
 		CreatedAt:      now,
 		UpdatedAt:      now,
 	}
@@ -199,6 +201,7 @@ func (s *PaymentService) CreateOrder(ctx context.Context, userID int64, input Cr
 		}
 		_, _, err := s.coupon.Reserve(tx, CouponQuoteInput{
 			UserID:      userID,
+			UserKnown:   true,
 			ProductType: productType,
 			Days:        days,
 			CouponCode:  input.CouponCode,
@@ -216,6 +219,7 @@ func (s *PaymentService) CreateOrder(ctx context.Context, userID int64, input Cr
 func (s *PaymentService) couponReserveQuote(userID int64, productType string, days int, couponCode string, originalAmount int64) (int64, string, error) {
 	quote, err := s.coupon.Preview(CouponQuoteInput{
 		UserID:      userID,
+		UserKnown:   true,
 		ProductType: productType,
 		Days:        days,
 		CouponCode:  couponCode,
@@ -227,7 +231,7 @@ func (s *PaymentService) couponReserveQuote(userID int64, productType string, da
 }
 
 func (s *PaymentService) GetOrder(userID int64, orderNo string) (*PaymentOrderView, error) {
-	order, err := s.findOwnedOrder(userID, orderNo)
+	order, err := s.findOwnedMembershipOrder(userID, orderNo)
 	if err != nil {
 		return nil, err
 	}
@@ -235,8 +239,10 @@ func (s *PaymentService) GetOrder(userID int64, orderNo string) (*PaymentOrderVi
 	membershipExpiresAt := ""
 	if order.Status == model.PaymentOrderStatusPaid {
 		var user model.User
-		if err := s.db.First(&user, order.UserID).Error; err == nil {
-			membershipExpiresAt = formatMembershipExpiry(user.MembershipExpiresAt)
+		if order.UserID != nil {
+			if err := s.db.First(&user, *order.UserID).Error; err == nil {
+				membershipExpiresAt = formatMembershipExpiry(user.MembershipExpiresAt)
+			}
 		}
 	}
 
@@ -249,7 +255,7 @@ func (s *PaymentService) ListOrders(userID int64, limit int) ([]PaymentOrderView
 	}
 
 	var orders []model.PaymentOrder
-	if err := s.db.Where("user_id = ?", userID).
+	if err := s.db.Where("user_id = ? AND product_type = ?", userID, model.ProductTypeMembershipRenew).
 		Order("id DESC").
 		Limit(limit).
 		Find(&orders).Error; err != nil {
@@ -264,7 +270,7 @@ func (s *PaymentService) ListOrders(userID int64, limit int) ([]PaymentOrderView
 }
 
 func (s *PaymentService) CloseOrder(ctx context.Context, userID int64, orderNo string) (*PaymentOrderView, error) {
-	order, err := s.findOwnedOrder(userID, orderNo)
+	order, err := s.findOwnedMembershipOrder(userID, orderNo)
 	if err != nil {
 		return nil, err
 	}
@@ -297,7 +303,7 @@ func (s *PaymentService) HandleWechatNotify(ctx context.Context, req *http.Reque
 	if err != nil {
 		return err
 	}
-	return s.completeOrderPayment(ctx, notifyResult.OutTradeNo, notifyResult.TransactionID, notifyResult.AmountFen, notifyResult.RawJSON, notifyResult.SuccessTime)
+	return s.CompleteOrderPayment(ctx, notifyResult.OutTradeNo, notifyResult.TransactionID, notifyResult.AmountFen, notifyResult.RawJSON, notifyResult.SuccessTime)
 }
 
 func (s *PaymentService) SimulatePayDev(ctx context.Context, userID int64, orderNo string) (*PaymentOrderView, error) {
@@ -305,7 +311,7 @@ func (s *PaymentService) SimulatePayDev(ctx context.Context, userID int64, order
 		return nil, ErrInvalidParam
 	}
 
-	order, err := s.findOwnedOrder(userID, orderNo)
+	order, err := s.findOwnedMembershipOrder(userID, orderNo)
 	if err != nil {
 		return nil, err
 	}
@@ -318,14 +324,14 @@ func (s *PaymentService) SimulatePayDev(ctx context.Context, userID int64, order
 
 	txID := "dev_" + orderNo
 	raw := fmt.Sprintf(`{"dev_mode":true,"order_no":"%s"}`, orderNo)
-	if err := s.completeOrderPayment(ctx, orderNo, txID, int64(order.Amount), raw, time.Now()); err != nil {
+	if err := s.CompleteOrderPayment(ctx, orderNo, txID, int64(order.Amount), raw, time.Now()); err != nil {
 		return nil, err
 	}
 
 	return s.GetOrder(userID, orderNo)
 }
 
-func (s *PaymentService) completeOrderPayment(ctx context.Context, orderNo, wxTransactionID string, amountFen int64, rawJSON string, paidAt time.Time) error {
+func (s *PaymentService) CompleteOrderPayment(ctx context.Context, orderNo, wxTransactionID string, amountFen int64, rawJSON string, paidAt time.Time) error {
 	acquired, err := s.redis.TryPaymentNotifyLock(ctx, orderNo, paymentNotifyLockTTL)
 	if err != nil {
 		return err
@@ -337,8 +343,7 @@ func (s *PaymentService) completeOrderPayment(ctx context.Context, orderNo, wxTr
 		_ = s.redis.ReleasePaymentNotifyLock(context.Background(), orderNo)
 	}()
 
-	var membershipExpiresAt string
-	err = s.db.Transaction(func(tx *gorm.DB) error {
+	return s.db.Transaction(func(tx *gorm.DB) error {
 		var order model.PaymentOrder
 		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).
 			Where("order_no = ?", orderNo).
@@ -359,17 +364,31 @@ func (s *PaymentService) completeOrderPayment(ctx context.Context, orderNo, wxTr
 			return fmt.Errorf("payment amount mismatch: order=%d notify=%d", order.Amount, amountFen)
 		}
 
-		var user model.User
-		if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&user, order.UserID).Error; err != nil {
-			return err
-		}
-
 		now := time.Now()
-		expiresAt := ExtendMembershipExpiry(user.MembershipExpiresAt, now, order.ProductDays)
-		user.MembershipExpiresAt = &expiresAt
-		user.UpdatedAt = now
-		if err := tx.Save(&user).Error; err != nil {
-			return err
+		switch order.ProductType {
+		case model.ProductTypeMembershipRenew:
+			if order.UserID == nil {
+				return fmt.Errorf("membership order missing user_id")
+			}
+			var user model.User
+			if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).First(&user, *order.UserID).Error; err != nil {
+				return err
+			}
+			expiresAt := ExtendMembershipExpiry(user.MembershipExpiresAt, now, order.ProductDays)
+			user.MembershipExpiresAt = &expiresAt
+			user.UpdatedAt = now
+			if err := tx.Save(&user).Error; err != nil {
+				return err
+			}
+			if err := s.coupon.ConsumeByOrderID(tx, order.ID); err != nil {
+				return err
+			}
+		case model.ProductTypeCoursePurchase:
+			if err := s.course.FulfillPaidOrder(tx, &order); err != nil {
+				return err
+			}
+		default:
+			return ErrPaymentProductInvalid
 		}
 
 		order.Status = model.PaymentOrderStatusPaid
@@ -377,34 +396,21 @@ func (s *PaymentService) completeOrderPayment(ctx context.Context, orderNo, wxTr
 		order.PaidAt = &paidAt
 		order.NotifyPayload = &rawJSON
 		order.UpdatedAt = now
-		if err := tx.Save(&order).Error; err != nil {
-			return err
-		}
-
-		if err := s.coupon.ConsumeByOrderID(tx, order.ID); err != nil {
-			return err
-		}
-
-		membershipExpiresAt = formatMembershipExpiry(&expiresAt)
-		return nil
+		return tx.Save(&order).Error
 	})
-	if err != nil {
-		return err
-	}
-	_ = membershipExpiresAt
-	return nil
 }
 
-func (s *PaymentService) findOwnedOrder(userID int64, orderNo string) (*model.PaymentOrder, error) {
+func (s *PaymentService) findOwnedMembershipOrder(userID int64, orderNo string) (*model.PaymentOrder, error) {
 	var order model.PaymentOrder
-	err := s.db.Where("order_no = ?", orderNo).First(&order).Error
+	err := s.db.Where("order_no = ? AND product_type = ?", orderNo, model.ProductTypeMembershipRenew).
+		First(&order).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, ErrPaymentOrderNotFound
 	}
 	if err != nil {
 		return nil, err
 	}
-	if order.UserID != userID {
+	if order.UserID == nil || *order.UserID != userID {
 		return nil, ErrPaymentOrderForbidden
 	}
 	return &order, nil
@@ -418,7 +424,7 @@ func (s *PaymentService) calcAmountFen(days int) int64 {
 	return base * int64(days) / int64(model.DefaultMembershipDays)
 }
 
-func generateOrderNo(userID int64, now time.Time) string {
+func generateMembershipOrderNo(userID int64, now time.Time) string {
 	buf := make([]byte, 4)
 	_, _ = rand.Read(buf)
 	return fmt.Sprintf("M%s%06d%s", now.Format("20060102150405"), userID%1000000, hex.EncodeToString(buf))

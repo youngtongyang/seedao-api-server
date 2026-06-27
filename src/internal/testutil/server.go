@@ -98,18 +98,79 @@ func (ts *TestServer) SetSMSCode(t *testing.T, phoneNum, code string) {
 	require.NoError(t, err)
 }
 
-func (ts *TestServer) SeedCoupon(t *testing.T, code string, discountFen int) {
+func (ts *TestServer) SeedCourseCatalog(t *testing.T) {
 	t.Helper()
 	now := time.Now()
+	future := now.Add(30 * 24 * time.Hour)
+
+	require.NoError(t, ts.DB.Create(&model.Course{
+		ID:        "course_test_spring",
+		Title:     "Test Course",
+		Status:    model.CourseStatusOnSale,
+		CreatedAt: now,
+		UpdatedAt: now,
+	}).Error)
+
+	require.NoError(t, ts.DB.Create(&model.CourseSKU{
+		CourseID:     "course_test_spring",
+		SKUID:        "standard",
+		Name:         "Standard Ticket",
+		BasePriceFen: 99900,
+		Status:       model.CourseStatusOnSale,
+		CreatedAt:    now,
+		UpdatedAt:    now,
+	}).Error)
+
+	channel := "PARTNER_X"
+	require.NoError(t, ts.DB.Create(&model.CourseDiscountRule{
+		CourseID:      "course_test_spring",
+		SKUID:         "standard",
+		RuleType:      model.CourseDiscountEarlyBird,
+		DiscountType:  model.CouponDiscountFixed,
+		DiscountValue: 20000,
+		ValidUntil:    &future,
+		Status:        model.CourseStatusOnSale,
+		CreatedAt:     now,
+		UpdatedAt:     now,
+	}).Error)
+
+	require.NoError(t, ts.DB.Create(&model.CourseDiscountRule{
+		CourseID:      "course_test_spring",
+		SKUID:         "standard",
+		RuleType:      model.CourseDiscountChannel,
+		DiscountType:  model.CouponDiscountFixed,
+		DiscountValue: 5000,
+		ChannelCode:   &channel,
+		Status:        model.CourseStatusOnSale,
+		CreatedAt:     now,
+		UpdatedAt:     now,
+	}).Error)
+
+	require.NoError(t, ts.DB.Create(&model.CourseDiscountRule{
+		CourseID:      "course_test_spring",
+		SKUID:         "standard",
+		RuleType:      model.CourseDiscountMember,
+		DiscountType:  model.CouponDiscountFixed,
+		DiscountValue: 10000,
+		Status:        model.CourseStatusOnSale,
+		CreatedAt:     now,
+		UpdatedAt:     now,
+	}).Error)
+}
+
+func (ts *TestServer) SeedMembershipCoupon(t *testing.T, code string) {
+	t.Helper()
+	now := time.Now()
+	future := now.Add(24 * time.Hour)
 	productType := model.ProductTypeMembershipRenew
 	require.NoError(t, ts.DB.Create(&model.Coupon{
 		Code:           code,
 		DiscountType:   model.CouponDiscountFixed,
-		DiscountValue:  discountFen,
+		DiscountValue:  1000,
 		ProductType:    &productType,
 		MaxUsesPerUser: 1,
 		ValidFrom:      now.Add(-time.Hour),
-		ValidUntil:     now.Add(24 * time.Hour),
+		ValidUntil:     future,
 		Status:         model.CouponStatusActive,
 		CreatedAt:      now,
 		UpdatedAt:      now,
