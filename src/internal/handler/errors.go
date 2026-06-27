@@ -54,6 +54,14 @@ func mapServiceError(c echo.Context, err error) error {
 		return response.Fail(c, http.StatusBadRequest, errcode.InvalidParam)
 	case errors.Is(err, service.ErrPaymentChannelInvalid):
 		return response.Fail(c, http.StatusBadRequest, errcode.InvalidParam)
+	case errors.Is(err, service.ErrCouponInvalid):
+		return response.Fail(c, http.StatusBadRequest, errcode.CouponInvalid)
+	case errors.Is(err, service.ErrCouponNotApplicable):
+		return response.Fail(c, http.StatusBadRequest, errcode.CouponNotApplicable)
+	case errors.Is(err, service.ErrCouponUsageExceeded):
+		return response.Fail(c, http.StatusBadRequest, errcode.CouponUsageExceeded)
+	case errors.Is(err, service.ErrCouponAmountTooLow):
+		return response.Fail(c, http.StatusBadRequest, errcode.CouponAmountTooLow)
 	default:
 		c.Logger().Error(err)
 		if middleware.IsDebug(c) {

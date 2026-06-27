@@ -48,7 +48,8 @@ func NewEcho(cfg *config.Config, db *gorm.DB, redis *redisstore.Store) (*echo.Ec
 	profileSvc := service.NewProfileService(db)
 	statsSvc := service.NewStatsService(db)
 	membershipSvc := service.NewMembershipService(db)
-	paymentSvc := service.NewPaymentService(db, redis, wxClient, cfg.WechatPay)
+	couponSvc := service.NewCouponService(db)
+	paymentSvc := service.NewPaymentService(db, redis, wxClient, cfg.WechatPay, couponSvc)
 
 	authHandler := handler.NewAuthHandler(authSvc, smsSvc)
 	snsHandler := handler.NewSNSHandler(snsSvc)
@@ -78,6 +79,7 @@ func NewEcho(cfg *config.Config, db *gorm.DB, redis *redisstore.Store) (*echo.Ec
 	v1.GET("/stats/user-count", statsHandler.UserCount)
 	v1.GET("/user/profile", profileHandler.Get, middleware.JWT(jwtMgr))
 	v1.POST("/user/membership/renew", membershipHandler.Renew, middleware.JWT(jwtMgr))
+	v1.POST("/payments/coupons/preview", paymentHandler.PreviewCoupon, middleware.JWT(jwtMgr))
 	v1.POST("/payments/orders", paymentHandler.CreateOrder, middleware.JWT(jwtMgr))
 	v1.GET("/payments/orders", paymentHandler.ListOrders, middleware.JWT(jwtMgr))
 	v1.GET("/payments/orders/:order_no", paymentHandler.GetOrder, middleware.JWT(jwtMgr))

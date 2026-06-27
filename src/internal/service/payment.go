@@ -34,14 +34,16 @@ type PaymentService struct {
 	redis    *redisstore.Store
 	wechat   wechatpay.Client
 	cfg      config.WechatPayConfig
+	coupon   *CouponService
 }
 
-func NewPaymentService(db *gorm.DB, redis *redisstore.Store, wechat wechatpay.Client, cfg config.WechatPayConfig) *PaymentService {
+func NewPaymentService(db *gorm.DB, redis *redisstore.Store, wechat wechatpay.Client, cfg config.WechatPayConfig, coupon *CouponService) *PaymentService {
 	return &PaymentService{
 		db:     db,
 		redis:  redis,
 		wechat: wechat,
 		cfg:    cfg,
+		coupon: coupon,
 	}
 }
 
@@ -50,6 +52,7 @@ type CreatePaymentOrderInput struct {
 	Days        int
 	PayChannel  string
 	ClientIP    string
+	CouponCode  string
 }
 
 type PaymentOrderView struct {
@@ -57,6 +60,9 @@ type PaymentOrderView struct {
 	ProductType         string `json:"product_type"`
 	ProductDays         int    `json:"product_days"`
 	PayChannel          string `json:"pay_channel"`
+	OriginalAmount      int    `json:"original_amount"`
+	DiscountAmount      int    `json:"discount_amount,omitempty"`
+	CouponCode          string `json:"coupon_code,omitempty"`
 	Amount              int    `json:"amount"`
 	Currency            string `json:"currency"`
 	Status              string `json:"status"`
@@ -66,6 +72,28 @@ type PaymentOrderView struct {
 	PaidAt              string `json:"paid_at,omitempty"`
 	MembershipExpiresAt string `json:"membership_expires_at,omitempty"`
 	WxTransactionID     string `json:"wx_transaction_id,omitempty"`
+}
+
+func (s *PaymentService) PreviewCoupon(userID int64, input CouponQuoteInput) (*CouponQuote, error) {
+	productType := input.ProductType
+	if productType == "" {
+		productType = model.ProductTypeMembershipRenew
+	}
+	if productType != model.ProductTypeMembershipRenew {
+		return nil, ErrPaymentProductInvalid
+	}
+
+	days := input.Days
+	if days <= 0 {
+		days = model.DefaultMembershipDays
+	}
+
+	input.UserID = userID
+	input.ProductType = productType
+	input.Days = days
+
+	originalAmount := s.calcAmountFen(days)
+	return s.coupon.Preview(input, originalAmount)
 }
 
 func (s *PaymentService) CreateOrder(ctx context.Context, userID int64, input CreatePaymentOrderInput) (*PaymentOrderView, error) {
@@ -98,24 +126,24 @@ func (s *PaymentService) CreateOrder(ctx context.Context, userID int64, input Cr
 		return nil, err
 	}
 
-	amountFen := s.calcAmountFen(days)
+	originalAmountFen := s.calcAmountFen(days)
+	finalAmountFen := originalAmountFen
+	var discountAmount int64
+	var storedCouponCode *string
+
+	if input.CouponCode != "" {
+		discount, code, err := s.couponReserveQuote(userID, productType, days, input.CouponCode, originalAmountFen)
+		if err != nil {
+			return nil, err
+		}
+		discountAmount = discount
+		finalAmountFen = originalAmountFen - discountAmount
+		storedCouponCode = &code
+	}
+
 	now := time.Now()
 	expiredAt := now.Add(time.Duration(s.cfg.OrderExpireMinutes) * time.Minute)
 	orderNo := generateOrderNo(userID, now)
-
-	order := model.PaymentOrder{
-		OrderNo:     orderNo,
-		UserID:      userID,
-		ProductType: productType,
-		ProductDays: days,
-		Amount:      int(amountFen),
-		Currency:    "CNY",
-		Status:      model.PaymentOrderStatusPending,
-		PayChannel:  payChannel,
-		ExpiredAt:   expiredAt,
-		CreatedAt:   now,
-		UpdatedAt:   now,
-	}
 
 	var payURL string
 	switch payChannel {
@@ -123,7 +151,7 @@ func (s *PaymentService) CreateOrder(ctx context.Context, userID int64, input Cr
 		nativeResult, err := s.wechat.CreateNativeOrder(ctx, wechatpay.NativeOrderInput{
 			OrderNo:     orderNo,
 			Description: s.cfg.Description,
-			AmountFen:   amountFen,
+			AmountFen:   finalAmountFen,
 			ExpireAt:    expiredAt,
 		})
 		if err != nil {
@@ -134,7 +162,7 @@ func (s *PaymentService) CreateOrder(ctx context.Context, userID int64, input Cr
 		h5Result, err := s.wechat.CreateH5Order(ctx, wechatpay.H5OrderInput{
 			OrderNo:     orderNo,
 			Description: s.cfg.Description,
-			AmountFen:   amountFen,
+			AmountFen:   finalAmountFen,
 			ExpireAt:    expiredAt,
 			ClientIP:    input.ClientIP,
 		})
@@ -144,13 +172,58 @@ func (s *PaymentService) CreateOrder(ctx context.Context, userID int64, input Cr
 		payURL = h5Result.H5URL
 	}
 
-	order.CodeURL = &payURL
+	order := model.PaymentOrder{
+		OrderNo:        orderNo,
+		UserID:         userID,
+		ProductType:    productType,
+		ProductDays:    days,
+		OriginalAmount: int(originalAmountFen),
+		DiscountAmount: int(discountAmount),
+		CouponCode:     storedCouponCode,
+		Amount:         int(finalAmountFen),
+		Currency:       "CNY",
+		Status:         model.PaymentOrderStatusPending,
+		PayChannel:     payChannel,
+		CodeURL:        &payURL,
+		ExpiredAt:      expiredAt,
+		CreatedAt:      now,
+		UpdatedAt:      now,
+	}
 
-	if err := s.db.Create(&order).Error; err != nil {
+	err := s.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(&order).Error; err != nil {
+			return err
+		}
+		if input.CouponCode == "" {
+			return nil
+		}
+		_, _, err := s.coupon.Reserve(tx, CouponQuoteInput{
+			UserID:      userID,
+			ProductType: productType,
+			Days:        days,
+			CouponCode:  input.CouponCode,
+		}, orderNo, order.ID, originalAmountFen)
+		return err
+	})
+	if err != nil {
+		_ = s.wechat.CloseOrder(ctx, orderNo)
 		return nil, err
 	}
 
 	return toPaymentOrderView(&order, ""), nil
+}
+
+func (s *PaymentService) couponReserveQuote(userID int64, productType string, days int, couponCode string, originalAmount int64) (int64, string, error) {
+	quote, err := s.coupon.Preview(CouponQuoteInput{
+		UserID:      userID,
+		ProductType: productType,
+		Days:        days,
+		CouponCode:  couponCode,
+	}, originalAmount)
+	if err != nil {
+		return 0, "", err
+	}
+	return int64(quote.DiscountAmount), quote.CouponCode, nil
 }
 
 func (s *PaymentService) GetOrder(userID int64, orderNo string) (*PaymentOrderView, error) {
@@ -207,7 +280,12 @@ func (s *PaymentService) CloseOrder(ctx context.Context, userID int64, orderNo s
 	order.Status = model.PaymentOrderStatusClosed
 	order.ClosedAt = &now
 	order.UpdatedAt = now
-	if err := s.db.Save(order).Error; err != nil {
+	if err := s.db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Save(order).Error; err != nil {
+			return err
+		}
+		return s.coupon.ReleaseByOrderID(tx, order.ID)
+	}); err != nil {
 		return nil, err
 	}
 
@@ -303,6 +381,10 @@ func (s *PaymentService) completeOrderPayment(ctx context.Context, orderNo, wxTr
 			return err
 		}
 
+		if err := s.coupon.ConsumeByOrderID(tx, order.ID); err != nil {
+			return err
+		}
+
 		membershipExpiresAt = formatMembershipExpiry(&expiresAt)
 		return nil
 	})
@@ -343,15 +425,25 @@ func generateOrderNo(userID int64, now time.Time) string {
 }
 
 func toPaymentOrderView(order *model.PaymentOrder, membershipExpiresAt string) *PaymentOrderView {
+	originalAmount := order.OriginalAmount
+	if originalAmount == 0 {
+		originalAmount = order.Amount
+	}
+
 	view := &PaymentOrderView{
-		OrderNo:     order.OrderNo,
-		ProductType: order.ProductType,
-		ProductDays: order.ProductDays,
-		PayChannel:  order.PayChannel,
-		Amount:      order.Amount,
-		Currency:    order.Currency,
-		Status:      order.Status,
-		ExpiredAt:   order.ExpiredAt.UTC().Format(time.RFC3339),
+		OrderNo:        order.OrderNo,
+		ProductType:    order.ProductType,
+		ProductDays:    order.ProductDays,
+		PayChannel:     order.PayChannel,
+		OriginalAmount: originalAmount,
+		DiscountAmount: order.DiscountAmount,
+		Amount:         order.Amount,
+		Currency:       order.Currency,
+		Status:         order.Status,
+		ExpiredAt:      order.ExpiredAt.UTC().Format(time.RFC3339),
+	}
+	if order.CouponCode != nil {
+		view.CouponCode = *order.CouponCode
 	}
 	if order.CodeURL != nil && order.Status == model.PaymentOrderStatusPending {
 		switch order.PayChannel {

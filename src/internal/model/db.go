@@ -41,5 +41,7 @@ func AutoMigrate(db *gorm.DB) error {
 		&SMSSendLog{},
 		&PaymentOrder{},
 		&PaymentRefund{},
+		&Coupon{},
+		&CouponRedemption{},
 	)
 }
