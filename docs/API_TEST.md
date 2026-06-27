@@ -4,6 +4,8 @@
 
 **变更标识：** `[NEW]` 本次新增 · `[CHANGED]` 本次变更
 
+> **v2.6 接口字段与鉴权说明（支付/课程）：** 见 [API_PAYMENTS_v2.6.md](API_PAYMENTS_v2.6.md)
+
 ### API 变更一览（v2.6）
 
 | 接口 | 标识 | 说明 |
@@ -313,7 +315,10 @@ curl -X POST http://127.0.0.1:8080/v1/auth/register \
 
 ---
 
-## 七、会员微信支付（需 JWT）`[NEW]`
+## 七、会员微信支付
+
+> 接口说明：[API_PAYMENTS_v2.6.md § 一、会员优惠券](API_PAYMENTS_v2.6.md#一会员优惠券)  
+> 会员订单创建/查单/关单：`JWT` 必填；券码试算：`JWT` 可选。
 
 支持两种支付渠道，通过创建订单时的 `pay_channel` 区分：
 
@@ -552,7 +557,9 @@ curl -X POST http://127.0.0.1:8080/v1/payments/orders \
 
 ## 八、课程售卖 `[NEW]`
 
-部署前执行迁移 `006_course_payments.sql`，并在库中配置 `courses` / `course_skus` / `course_discount_rules`。
+> 接口说明：[API_PAYMENTS_v2.6.md § 二、课程售卖](API_PAYMENTS_v2.6.md#二课程售卖)
+
+**前置：** 库中已有课程配置（`courses` / `course_skus` / `course_discount_rules`）。本地可先执行 `setup-db.sh` 后手动 INSERT，或参考 [OPERATIONS.md § 十二](OPERATIONS.md#十二优惠券与课程数据配置)。
 
 ### 21. 价格试算（JWT 可选）
 
@@ -560,38 +567,96 @@ curl -X POST http://127.0.0.1:8080/v1/payments/orders \
 curl -X POST http://127.0.0.1:8080/v1/courses/checkout/preview \
   -H "Content-Type: application/json" \
   -d '{
-    "course_id": "course_test_spring",
+    "course_id": "course_2026_spring",
     "sku_id": "standard",
-    "channel_code": "PARTNER_X"
+    "channel_code": "PARTNER_X",
+    "apply_member_discount": true
   }'
 ```
 
-未登录时响应含 `amount_if_member` 与 `member_discount.hint`（「登录后可享」）。
+未登录成功预期（节选）：
 
-### 22. 创建课程订单（无主，无需 JWT）
+```json
+{
+  "code": 0,
+  "data": {
+    "original_amount": 99900,
+    "final_amount": 74900,
+    "amount_if_member": 64900,
+    "member_discount": {
+      "amount": 10000,
+      "applied": false,
+      "requires_login": true,
+      "hint": "会员价 649.00 元，登录后可享"
+    }
+  }
+}
+```
+
+已登录且有效会员时，若 `apply_member_discount: true`，则 `final_amount` 等于 `amount_if_member`。
+
+### 22. 创建课程订单
+
+**无主（无需 JWT）：**
 
 ```bash
 curl -X POST http://127.0.0.1:8080/v1/courses/orders \
   -H "Content-Type: application/json" \
   -d '{
-    "course_id": "course_test_spring",
+    "course_id": "course_2026_spring",
     "sku_id": "standard",
     "channel_code": "PARTNER_X",
     "pay_channel": "wechat_native"
   }'
 ```
 
-**务必保存**响应中的 `order_token`（仅返回一次）。
-
-### 23. 查单 / 关单（token）
+**登录 + 会员价：**
 
 ```bash
+curl -X POST http://127.0.0.1:8080/v1/courses/orders \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <TOKEN>" \
+  -d '{
+    "course_id": "course_2026_spring",
+    "sku_id": "standard",
+    "channel_code": "PARTNER_X",
+    "apply_member_discount": true
+  }'
+```
+
+成功预期（无主订单）：
+
+```json
+{
+  "code": 0,
+  "data": {
+    "order_no": "C20260627143000a1b2",
+    "order_token": "ot_xxxxxxxx",
+    "amount": 74900,
+    "status": "pending",
+    "code_url": "weixin://wxpay/bizpayurl?pr=xxxxx"
+  }
+}
+```
+
+**务必保存 `order_token`（仅返回一次）。**
+
+### 23. 查单 / 关单
+
+```bash
+# 无主订单
 curl "http://127.0.0.1:8080/v1/courses/orders/<ORDER_NO>?token=<ORDER_TOKEN>"
 
 curl -X POST "http://127.0.0.1:8080/v1/courses/orders/<ORDER_NO>/close" \
   -H "Content-Type: application/json" \
   -d '{"order_token":"<ORDER_TOKEN>"}'
+
+# 已登录且已认领 / 登录下单
+curl "http://127.0.0.1:8080/v1/courses/orders/<ORDER_NO>" \
+  -H "Authorization: Bearer <TOKEN>"
 ```
+
+支付成功后 `enrollment_status` 为 `active`。
 
 ### 24. 模拟支付（dev_mode）
 
@@ -601,13 +666,35 @@ curl -X POST "http://127.0.0.1:8080/v1/courses/dev/orders/<ORDER_NO>/simulate-pa
   -d '{"order_token":"<ORDER_TOKEN>"}'
 ```
 
-### 25. 登录后认领订单
+### 25. 登录后认领无主订单
 
 ```bash
 curl -X POST http://127.0.0.1:8080/v1/courses/orders/claim \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <TOKEN>" \
   -d '{"order_no":"<ORDER_NO>","order_token":"<ORDER_TOKEN>"}'
+```
+
+### 课程购买完整联调（dev_mode）
+
+```bash
+# 1. 试算
+curl -X POST http://127.0.0.1:8080/v1/courses/checkout/preview \
+  -H "Content-Type: application/json" \
+  -d '{"course_id":"course_2026_spring","sku_id":"standard","channel_code":"PARTNER_X"}'
+
+# 2. 下单（保存 ORDER_NO、ORDER_TOKEN）
+curl -X POST http://127.0.0.1:8080/v1/courses/orders \
+  -H "Content-Type: application/json" \
+  -d '{"course_id":"course_2026_spring","sku_id":"standard","channel_code":"PARTNER_X"}'
+
+# 3. 模拟支付
+curl -X POST "http://127.0.0.1:8080/v1/courses/dev/orders/<ORDER_NO>/simulate-pay" \
+  -H "Content-Type: application/json" \
+  -d '{"order_token":"<ORDER_TOKEN>"}'
+
+# 4. 确认履约
+curl "http://127.0.0.1:8080/v1/courses/orders/<ORDER_NO>?token=<ORDER_TOKEN>"
 ```
 
 ---
@@ -682,6 +769,16 @@ curl -X POST http://127.0.0.1:8080/v1/auth/login \
 | 40009 | 手机号未注册（可注册，`/v1/auth/phone/check`） |
 | 40007 | 支付订单不存在或无权访问 |
 | 40008 | 支付订单状态无效（如已支付、已关闭） |
+| 40010 | 优惠券无效 |
+| 40011 | 优惠券不适用 |
+| 40012 | 优惠券使用次数超限 |
+| 40013 | 优惠后金额过低 |
+| 40014 | 课程 / 票种不存在 |
+| 40015 | 课程未在售 |
+| 40016 | 会员折扣需登录 |
+| 40017 | 课程订单 token 必填 |
+| 40018 | 课程订单 token 无效 |
+| 40019 | 课程订单已被认领 |
 | 42901 | 发送过于频繁 |
 | 50000 | 服务器内部错误 |
 

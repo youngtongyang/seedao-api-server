@@ -2,7 +2,7 @@
 
 SeeDAO 2.0 用户认证与 SNS 服务 API（v2.6）。
 
-面向 Web / H5 客户端，提供手机号验证码注册/登录、SNS 名称校验与预留、老用户钱包认领链上 SNS、个人 Profile、首页用户统计、会员微信支付等能力。运行时零链上 RPC 依赖。
+面向 Web / H5 客户端，提供手机号验证码注册/登录、SNS 名称校验与预留、老用户钱包认领链上 SNS、个人 Profile、首页用户统计、会员微信支付、课程售卖等能力。运行时零链上 RPC 依赖。
 
 ## 项目结构
 
@@ -35,6 +35,7 @@ seedao-api-server/
 ├── docs/
 │   ├── DEPLOYMENT.md          # 部署步骤说明
 │   ├── OPERATIONS.md          # 运维操作手册（发版、备份、排错、删用户等）
+│   ├── API_PAYMENTS_v2.6.md   # v2.6 支付/课程接口详细说明
 │   └── API_TEST.md            # 本地联调 curl（含 [NEW]/[CHANGED] 标注）
 └── README.md
 ```
@@ -100,6 +101,8 @@ cp config.local.example.yaml config.local.yaml
 | `POST /v1/auth/login` / `register` | 无 | `[CHANGED]` | `user` 增加 `membership_expires_at` |
 
 本地联调 curl 见 **[docs/API_TEST.md](docs/API_TEST.md)**（含 `[NEW]` / `[CHANGED]` 标注）。
+
+**v2.6 支付与课程接口完整说明**见 **[docs/API_PAYMENTS_v2.6.md](docs/API_PAYMENTS_v2.6.md)**（请求/响应字段、鉴权、错误码、前端对接流程）。
 
 统一响应格式：
 
