@@ -16,8 +16,21 @@ var (
 	ErrWalletDomainRequired   = errors.New("wallet domain required")
 	ErrPhoneAlreadyExists = errors.New("phone already exists")
 	ErrUserNotFound       = errors.New("user not found")
-	ErrTooManyRequests    = errors.New("too many requests")
+	ErrTooManyRequests = errors.New("too many requests")
 )
+
+// RateLimitError carries retry_after seconds for 429 responses.
+type RateLimitError struct {
+	RetryAfter int
+}
+
+func (e *RateLimitError) Error() string {
+	return ErrTooManyRequests.Error()
+}
+
+func (e *RateLimitError) Is(target error) bool {
+	return target == ErrTooManyRequests
+}
 
 // Client-facing detail strings for wallet/SIWE errors (stable for frontend).
 const (

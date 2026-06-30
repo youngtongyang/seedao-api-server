@@ -49,7 +49,7 @@ func (s *SMSService) Send(ctx context.Context, phoneNum, ip string) (*SendSMSRes
 		return nil, err
 	}
 	if limited {
-		return nil, ErrTooManyRequests
+		return nil, s.phoneRateLimitError(ctx, phoneHash)
 	}
 
 	count, err := s.redis.IncrIPRate(ctx, ip, smsIPRateTTL)
@@ -57,7 +57,7 @@ func (s *SMSService) Send(ctx context.Context, phoneNum, ip string) (*SendSMSRes
 		return nil, err
 	}
 	if count > smsIPRateLimit {
-		return nil, ErrTooManyRequests
+		return nil, s.ipRateLimitError(ctx, ip)
 	}
 
 	code, err := generateSMSCode()
@@ -78,7 +78,36 @@ func (s *SMSService) Send(ctx context.Context, phoneNum, ip string) (*SendSMSRes
 	}
 	_ = s.logSend(phoneHash, ip, "success")
 
-	return &SendSMSResult{RetryAfter: 60}, nil
+	return &SendSMSResult{RetryAfter: int(smsPhoneRateTTL.Seconds())}, nil
+}
+
+func (s *SMSService) phoneRateLimitError(ctx context.Context, phoneHash string) error {
+	fallback := int(smsPhoneRateTTL.Seconds())
+	ttl, err := s.redis.SMSPhoneRateLimitTTL(ctx, phoneHash)
+	if err != nil {
+		return &RateLimitError{RetryAfter: fallback}
+	}
+	return &RateLimitError{RetryAfter: retryAfterSeconds(ttl, fallback)}
+}
+
+func (s *SMSService) ipRateLimitError(ctx context.Context, ip string) error {
+	fallback := int(smsIPRateTTL.Seconds())
+	ttl, err := s.redis.SMSIPRateLimitTTL(ctx, ip)
+	if err != nil {
+		return &RateLimitError{RetryAfter: fallback}
+	}
+	return &RateLimitError{RetryAfter: retryAfterSeconds(ttl, fallback)}
+}
+
+func retryAfterSeconds(ttl time.Duration, fallback int) int {
+	if ttl <= 0 {
+		return fallback
+	}
+	sec := int((ttl + time.Second - 1) / time.Second)
+	if sec < 1 {
+		return 1
+	}
+	return sec
 }
 
 func (s *SMSService) Verify(ctx context.Context, phoneNum, code string) error {

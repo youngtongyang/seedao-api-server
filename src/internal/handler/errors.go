@@ -39,7 +39,14 @@ func mapServiceError(c echo.Context, err error) error {
 	case errors.Is(err, service.ErrPhoneAlreadyExists):
 		return response.Fail(c, http.StatusBadRequest, errcode.PhoneAlreadyExists)
 	case errors.Is(err, service.ErrTooManyRequests):
-		return response.Fail(c, http.StatusTooManyRequests, errcode.TooManyRequests)
+		retryAfter := 60
+		var rateLimit *service.RateLimitError
+		if errors.As(err, &rateLimit) {
+			retryAfter = rateLimit.RetryAfter
+		}
+		return response.WithCode(c, http.StatusTooManyRequests, errcode.TooManyRequests, service.SendSMSResult{
+			RetryAfter: retryAfter,
+		})
 	case errors.Is(err, service.ErrUserNotFound):
 		return response.Fail(c, http.StatusBadRequest, errcode.InvalidSMSCode)
 	case errors.Is(err, service.ErrPaymentOrderNotFound):

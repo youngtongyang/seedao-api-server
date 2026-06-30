@@ -171,6 +171,18 @@ curl http://127.0.0.1:8080/health
 { "code": 0, "message": "ok", "data": { "retry_after": 60 } }
 ```
 
+60 秒内重复发送（HTTP 429）：
+
+```json
+{
+  "code": 42901,
+  "message": "too many requests",
+  "data": { "retry_after": 47 }
+}
+```
+
+`retry_after` 为 Redis 限流 key 剩余秒数，前端应用其做倒计时，勿当作「发送失败」。
+
 说明：验证码 6 位、5 分钟有效；同号 60s、同 IP 20 次/小时限流。
 
 ---

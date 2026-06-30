@@ -55,6 +55,14 @@ func (s *Store) PhoneRateLimited(ctx context.Context, phoneHash string) (bool, e
 	return n > 0, nil
 }
 
+func (s *Store) SMSPhoneRateLimitTTL(ctx context.Context, phoneHash string) (time.Duration, error) {
+	return s.client.TTL(ctx, "sms:rate:phone:"+phoneHash).Result()
+}
+
+func (s *Store) SMSIPRateLimitTTL(ctx context.Context, ip string) (time.Duration, error) {
+	return s.client.TTL(ctx, "sms:rate:ip:"+ip).Result()
+}
+
 func (s *Store) IncrIPRate(ctx context.Context, ip string, ttl time.Duration) (int64, error) {
 	key := "sms:rate:ip:" + ip
 	pipe := s.client.Pipeline()

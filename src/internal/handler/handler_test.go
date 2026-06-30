@@ -45,6 +45,27 @@ func TestSendSMS_InvalidPhone(t *testing.T) {
 	require.Equal(t, http.StatusBadRequest, rec.Code)
 }
 
+func TestSendSMS_RateLimited(t *testing.T) {
+	ts := testutil.NewTestServer(t)
+	phoneNum := "+8613900138999"
+
+	rec1 := testutil.DoJSON(t, ts.Echo, http.MethodPost, "/v1/auth/sms/send", map[string]string{
+		"phone": phoneNum,
+	}, nil)
+	require.Equal(t, http.StatusOK, rec1.Code)
+
+	rec2 := testutil.DoJSON(t, ts.Echo, http.MethodPost, "/v1/auth/sms/send", map[string]string{
+		"phone": phoneNum,
+	}, nil)
+	require.Equal(t, http.StatusTooManyRequests, rec2.Code)
+
+	resp := testutil.ParseErrorResponse(t, rec2)
+	assert.Equal(t, errcode.TooManyRequests, resp.Code)
+	data := testutil.ParseData[map[string]int](t, resp.Data)
+	assert.Greater(t, data["retry_after"], 0)
+	assert.LessOrEqual(t, data["retry_after"], 60)
+}
+
 func TestPhoneCheck_NotRegistered(t *testing.T) {
 	ts := testutil.NewTestServer(t)
 
