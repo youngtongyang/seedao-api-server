@@ -136,8 +136,67 @@
 |------|------|------|
 | `course_id` | 是 | 课程 ID |
 | `sku_id` | 是 | 票种 ID |
-| `channel_code` | 否 | 渠道码；有则尝试匹配渠道折扣规则 |
+| `channel_code` | 否 | 渠道码；有则尝试匹配 `course_discount_rules` 中 `rule_type=channel` 的规则 |
 | `apply_member_discount` | 否 | 默认 `false`；为 `true` 且已登录有效会员时，`final_amount` 含会员价 |
+
+> **与会员券区别：** 课程不使用 `coupons` 表，**没有** `coupon_code`。会员续费券（如 SAVE500）请走 `POST /v1/payments/coupons/preview`；课程渠道优惠传 `channel_code`。
+
+**响应中如何区分折扣类型：** `discounts[].type` 取值 `early_bird`（早鸟）、`channel`（渠道）、`member`（会员）。
+
+#### 三种场景传参示例
+
+| 场景 | `channel_code` | `apply_member_discount` | `Authorization` |
+|------|----------------|-------------------------|-----------------|
+| 仅早鸟 | 不传 | `false` | 不要 |
+| 早鸟 + 渠道 | `"PARTNER_X"` | `false` | 不要 |
+| 早鸟 + 渠道 + 会员 | `"PARTNER_X"`（可选） | `true` | **Bearer JWT** |
+
+**1）仅早鸟价**
+
+```bash
+curl -s -X POST https://api.seedao.xyz/v1/courses/checkout/preview \
+  -H "Content-Type: application/json" \
+  -d '{
+    "course_id": "course_2026_spring",
+    "sku_id": "standard",
+    "apply_member_discount": false
+  }'
+```
+
+早鸟在 `course_discount_rules` 有效期内自动生效，无需传码。预期 `discounts` 含 `type: "early_bird"`。
+
+**2）早鸟 + 渠道价**
+
+```bash
+curl -s -X POST https://api.seedao.xyz/v1/courses/checkout/preview \
+  -H "Content-Type: application/json" \
+  -d '{
+    "course_id": "course_2026_spring",
+    "sku_id": "standard",
+    "channel_code": "PARTNER_X",
+    "apply_member_discount": false
+  }'
+```
+
+`channel_code` 须与库中渠道规则一致。预期 `discounts` 含 `early_bird` 与 `channel`。
+
+**3）早鸟 + 渠道 + 会员价（需登录）**
+
+```bash
+curl -s -X POST https://api.seedao.xyz/v1/courses/checkout/preview \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <JWT>" \
+  -d '{
+    "course_id": "course_2026_spring",
+    "sku_id": "standard",
+    "channel_code": "PARTNER_X",
+    "apply_member_discount": true
+  }'
+```
+
+须 JWT 且用户会员未过期。预期 `discounts` 可出现 `member` 且 `applied: true`，`final_amount` 为三项叠加价。
+
+创建订单 `POST /v1/courses/orders` 使用相同字段，另加 `pay_channel`（`wechat_native` / `wechat_h5`）。
 
 **成功响应 `data`（未登录示例）：**
 
