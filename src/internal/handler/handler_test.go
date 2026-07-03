@@ -222,6 +222,30 @@ func TestLogin(t *testing.T) {
 	assert.NotEmpty(t, data["token"])
 }
 
+func TestLoginUnregisteredPhone(t *testing.T) {
+	ts := testutil.NewTestServer(t)
+	phoneNum := "+8613900139002"
+	ts.SetSMSCode(t, phoneNum, "123456")
+
+	rec := testutil.DoJSON(t, ts.Echo, http.MethodPost, "/v1/auth/login", map[string]string{
+		"phone": phoneNum,
+		"code":  "123456",
+	}, nil)
+	resp := testutil.ParseErrorResponse(t, rec)
+
+	assert.Equal(t, http.StatusBadRequest, rec.Code)
+	assert.Equal(t, errcode.PhoneNotRegistered, resp.Code)
+
+	// 验证码未消耗，同一验证码仍可注册
+	reg := testutil.DoJSON(t, ts.Echo, http.MethodPost, "/v1/auth/register", map[string]string{
+		"phone":         phoneNum,
+		"code":          "123456",
+		"register_type": "new_sns",
+		"sns_name":      "unreg_test.seedao",
+	}, nil)
+	require.Equal(t, http.StatusOK, reg.Code)
+}
+
 func TestWalletNonce(t *testing.T) {
 	ts := testutil.NewTestServer(t)
 

@@ -81,7 +81,7 @@ func (s *AuthService) Login(ctx context.Context, phoneNum, code string) (*AuthRe
 	if err := phone.Validate(phoneNum); err != nil {
 		return nil, ErrInvalidParam
 	}
-	if err := s.sms.Verify(ctx, phoneNum, code); err != nil {
+	if err := s.sms.ValidateCode(ctx, phoneNum, code); err != nil {
 		return nil, err
 	}
 
@@ -90,7 +90,11 @@ func (s *AuthService) Login(ctx context.Context, phoneNum, code string) (*AuthRe
 		return nil, err
 	}
 	if user == nil {
-		return nil, ErrUserNotFound
+		return nil, ErrPhoneNotRegistered
+	}
+
+	if err := s.sms.ConsumeCode(ctx, phoneNum); err != nil {
+		return nil, err
 	}
 
 	return s.buildAuthResult(user)

@@ -38,6 +38,8 @@ func mapServiceError(c echo.Context, err error) error {
 		return failWithReason(c, http.StatusBadRequest, errcode.WalletNoSNS, service.ReasonWalletNotInRegistry)
 	case errors.Is(err, service.ErrPhoneAlreadyExists):
 		return response.Fail(c, http.StatusBadRequest, errcode.PhoneAlreadyExists)
+	case errors.Is(err, service.ErrPhoneNotRegistered):
+		return response.Fail(c, http.StatusBadRequest, errcode.PhoneNotRegistered)
 	case errors.Is(err, service.ErrTooManyRequests):
 		retryAfter := 60
 		var rateLimit *service.RateLimitError

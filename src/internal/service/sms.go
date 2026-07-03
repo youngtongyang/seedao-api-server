@@ -110,7 +110,7 @@ func retryAfterSeconds(ttl time.Duration, fallback int) int {
 	return sec
 }
 
-func (s *SMSService) Verify(ctx context.Context, phoneNum, code string) error {
+func (s *SMSService) ValidateCode(ctx context.Context, phoneNum, code string) error {
 	if err := phone.Validate(phoneNum); err != nil {
 		return ErrInvalidParam
 	}
@@ -123,7 +123,18 @@ func (s *SMSService) Verify(ctx context.Context, phoneNum, code string) error {
 	if stored != code {
 		return ErrInvalidSMSCode
 	}
-	return s.redis.DeleteSMSCode(ctx, phoneHash)
+	return nil
+}
+
+func (s *SMSService) ConsumeCode(ctx context.Context, phoneNum string) error {
+	return s.redis.DeleteSMSCode(ctx, phone.Hash(phoneNum))
+}
+
+func (s *SMSService) Verify(ctx context.Context, phoneNum, code string) error {
+	if err := s.ValidateCode(ctx, phoneNum, code); err != nil {
+		return err
+	}
+	return s.ConsumeCode(ctx, phoneNum)
 }
 
 func (s *SMSService) logSend(phoneHash, ip, status string) error {

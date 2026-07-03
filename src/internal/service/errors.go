@@ -14,8 +14,9 @@ var (
 	ErrWalletSignatureInvalid = errors.New("wallet signature invalid")
 	ErrWalletAddressMismatch  = errors.New("wallet address mismatch")
 	ErrWalletDomainRequired   = errors.New("wallet domain required")
-	ErrPhoneAlreadyExists = errors.New("phone already exists")
-	ErrUserNotFound       = errors.New("user not found")
+	ErrPhoneAlreadyExists  = errors.New("phone already exists")
+	ErrPhoneNotRegistered  = errors.New("phone not registered")
+	ErrUserNotFound        = errors.New("user not found")
 	ErrTooManyRequests = errors.New("too many requests")
 )
 
