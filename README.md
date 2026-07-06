@@ -569,7 +569,7 @@ go test ./internal/handler/... -v
 
 ## 技术栈
 
-- Go 1.22+ / Echo
+- Go 1.23+ / Echo
 - PostgreSQL 16 / GORM
 - Redis 7
 - 阿里云 dysmsapi
