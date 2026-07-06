@@ -3,8 +3,10 @@ package app
 import (
 	"github.com/labstack/echo/v4"
 	echomw "github.com/labstack/echo/v4/middleware"
+	echoSwagger "github.com/swaggo/echo-swagger"
 	"gorm.io/gorm"
 
+	_ "github.com/seedao/seedao-api-server/docs"
 	"github.com/seedao/seedao-api-server/internal/config"
 	"github.com/seedao/seedao-api-server/internal/handler"
 	"github.com/seedao/seedao-api-server/internal/middleware"
@@ -51,6 +53,7 @@ func NewEcho(cfg *config.Config, db *gorm.DB, redis *redisstore.Store) (*echo.Ec
 	couponSvc := service.NewCouponService(db)
 	courseSvc := service.NewCourseService(db, wxClient, cfg.WechatPay)
 	paymentSvc := service.NewPaymentService(db, redis, wxClient, cfg.WechatPay, couponSvc, courseSvc)
+	proposalSvc := service.NewProposalService(db, cfg.Governance)
 
 	authHandler := handler.NewAuthHandler(authSvc, smsSvc)
 	snsHandler := handler.NewSNSHandler(snsSvc)
@@ -60,6 +63,7 @@ func NewEcho(cfg *config.Config, db *gorm.DB, redis *redisstore.Store) (*echo.Ec
 	membershipHandler := handler.NewMembershipHandler(membershipSvc)
 	paymentHandler := handler.NewPaymentHandler(paymentSvc, cfg.WechatPay.DevMode)
 	courseHandler := handler.NewCourseHandler(courseSvc, paymentSvc, cfg.WechatPay.DevMode)
+	proposalHandler := handler.NewProposalHandler(proposalSvc, profileSvc)
 
 	e := echo.New()
 	e.HideBanner = true
@@ -69,6 +73,7 @@ func NewEcho(cfg *config.Config, db *gorm.DB, redis *redisstore.Store) (*echo.Ec
 	e.Use(middleware.DebugMode(cfg.Server.Debug))
 
 	e.GET("/health", handler.Health)
+	e.GET("/swagger/*", echoSwagger.WrapHandler)
 
 	v1 := e.Group("/v1")
 	v1.POST("/auth/sms/send", authHandler.SendSMS)
@@ -96,6 +101,21 @@ func NewEcho(cfg *config.Config, db *gorm.DB, redis *redisstore.Store) (*echo.Ec
 		v1.POST("/payments/dev/simulate-pay", paymentHandler.SimulatePayDev, middleware.JWT(jwtMgr))
 		v1.POST("/courses/dev/orders/:order_no/simulate-pay", courseHandler.SimulatePayDev, middleware.OptionalJWT(jwtMgr))
 	}
+
+	v1.GET("/governance/nodes", proposalHandler.GovernanceNodes)
+	v1.GET("/proposals", proposalHandler.List)
+	v1.GET("/proposals/:id/vote-summary", proposalHandler.VoteSummary)
+	v1.GET("/proposals/:id/votes/me", proposalHandler.GetMyVote, middleware.JWT(jwtMgr))
+	v1.GET("/proposals/:id/votes", proposalHandler.ListVotes)
+	v1.GET("/proposals/:id/comments", proposalHandler.ListComments)
+	v1.GET("/proposals/:id", proposalHandler.Get)
+	v1.POST("/proposals", proposalHandler.Create, middleware.JWT(jwtMgr))
+	v1.PATCH("/proposals/:id", proposalHandler.Update, middleware.JWT(jwtMgr))
+	v1.POST("/proposals/:id/close", proposalHandler.Close, middleware.JWT(jwtMgr))
+	v1.POST("/proposals/:id/publish", proposalHandler.Publish, middleware.JWT(jwtMgr))
+	v1.POST("/proposals/:id/finalize", proposalHandler.Finalize, middleware.JWT(jwtMgr))
+	v1.POST("/proposals/:id/votes", proposalHandler.CastVote, middleware.JWT(jwtMgr))
+	v1.POST("/proposals/:id/comments", proposalHandler.CreateComment, middleware.JWT(jwtMgr))
 
 	return e, nil
 }

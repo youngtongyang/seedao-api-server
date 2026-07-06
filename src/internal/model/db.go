@@ -47,5 +47,8 @@ func AutoMigrate(db *gorm.DB) error {
 		&CourseSKU{},
 		&CourseDiscountRule{},
 		&CourseEnrollment{},
+		&Proposal{},
+		&ProposalVote{},
+		&ProposalComment{},
 	)
 }

@@ -14,6 +14,9 @@ type Body struct {
 	Data    interface{} `json:"data,omitempty"`
 }
 
+// Envelope is the standard API response wrapper (for OpenAPI docs).
+type Envelope = Body
+
 func OK(c echo.Context, data interface{}) error {
 	return WithCode(c, http.StatusOK, errcode.OK, data)
 }

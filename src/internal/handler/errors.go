@@ -83,6 +83,22 @@ func mapServiceError(c echo.Context, err error) error {
 		return response.Fail(c, http.StatusForbidden, errcode.CourseOrderTokenInvalid)
 	case errors.Is(err, service.ErrCourseOrderAlreadyClaimed):
 		return response.Fail(c, http.StatusBadRequest, errcode.CourseOrderClaimed)
+	case errors.Is(err, service.ErrProposalNotFound):
+		return response.Fail(c, http.StatusBadRequest, errcode.ProposalNotFound)
+	case errors.Is(err, service.ErrProposalForbidden):
+		return response.Fail(c, http.StatusForbidden, errcode.ProposalForbidden)
+	case errors.Is(err, service.ErrProposalInvalidStatus):
+		return response.Fail(c, http.StatusBadRequest, errcode.ProposalInvalidStatus)
+	case errors.Is(err, service.ErrProposalVoteClosed):
+		return response.Fail(c, http.StatusBadRequest, errcode.ProposalVoteClosed)
+	case errors.Is(err, service.ErrProposalAlreadyVoted):
+		return response.Fail(c, http.StatusBadRequest, errcode.ProposalAlreadyVoted)
+	case errors.Is(err, service.ErrProposalNotVoter):
+		return response.Fail(c, http.StatusForbidden, errcode.ProposalNotVoter)
+	case errors.Is(err, service.ErrProposalSNSRequired):
+		return response.Fail(c, http.StatusBadRequest, errcode.ProposalSNSRequired)
+	case errors.Is(err, service.ErrProposalVoteNotFound):
+		return response.Fail(c, http.StatusBadRequest, errcode.ProposalVoteNotFound)
 	default:
 		c.Logger().Error(err)
 		if middleware.IsDebug(c) {

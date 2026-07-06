@@ -23,6 +23,16 @@ type sendSMSRequest struct {
 	Phone string `json:"phone"`
 }
 
+// SendSMS godoc
+// @Summary      发送短信验证码
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        body  body  sendSMSRequest  true  "手机号"
+// @Success      200  {object}  response.Envelope
+// @Failure      400  {object}  response.Envelope
+// @Failure      429  {object}  response.Envelope
+// @Router       /v1/auth/sms/send [post]
 func (h *AuthHandler) SendSMS(c echo.Context) error {
 	var req sendSMSRequest
 	if err := c.Bind(&req); err != nil {
@@ -36,6 +46,13 @@ func (h *AuthHandler) SendSMS(c echo.Context) error {
 	return response.OK(c, result)
 }
 
+// CheckPhone godoc
+// @Summary      检查手机号是否可注册
+// @Tags         auth
+// @Produce      json
+// @Param        phone  query  string  true  "E.164 手机号"
+// @Success      200  {object}  response.Envelope
+// @Router       /v1/auth/phone/check [get]
 func (h *AuthHandler) CheckPhone(c echo.Context) error {
 	phoneNum := c.QueryParam("phone")
 	if phoneNum == "" {
@@ -55,6 +72,15 @@ type loginRequest struct {
 	Code  string `json:"code"`
 }
 
+// Login godoc
+// @Summary      手机号登录
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        body  body  loginRequest  true  "登录"
+// @Success      200  {object}  response.Envelope
+// @Failure      400  {object}  response.Envelope
+// @Router       /v1/auth/login [post]
 func (h *AuthHandler) Login(c echo.Context) error {
 	var req loginRequest
 	if err := c.Bind(&req); err != nil {
@@ -80,6 +106,15 @@ type registerRequest struct {
 	Signature    string `json:"signature"`
 }
 
+// Register godoc
+// @Summary      注册（新 SNS / 认领存量 SNS）
+// @Tags         auth
+// @Accept       json
+// @Produce      json
+// @Param        body  body  registerRequest  true  "注册"
+// @Success      200  {object}  response.Envelope
+// @Failure      400  {object}  response.Envelope
+// @Router       /v1/auth/register [post]
 func (h *AuthHandler) Register(c echo.Context) error {
 	var req registerRequest
 	if err := c.Bind(&req); err != nil {

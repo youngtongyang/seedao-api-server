@@ -1,6 +1,6 @@
 # seedao-api-server
 
-SeeDAO 2.0 用户认证与 SNS 服务 API（v2.6）。
+SeeDAO 2.0 用户认证与 SNS 服务 API（v2.7）。
 
 面向 Web / H5 客户端，提供手机号验证码注册/登录、SNS 名称校验与预留、老用户钱包认领链上 SNS、个人 Profile、首页用户统计、会员微信支付、课程售卖等能力。运行时零链上 RPC 依赖。
 
@@ -36,6 +36,8 @@ seedao-api-server/
 │   ├── DEPLOYMENT.md          # 部署步骤说明
 │   ├── OPERATIONS.md          # 运维操作手册（发版、备份、排错、删用户等）
 │   ├── API_PAYMENTS_v2.6.md   # v2.6 支付/课程接口详细说明
+│   ├── API_GOVERNANCE.md      # v2.7 治理/提案接口
+│   ├── docs/                  # Swagger 生成物（swag init）
 │   └── API_TEST.md            # 本地联调 curl（含 [NEW]/[CHANGED] 标注）
 └── README.md
 ```
@@ -71,6 +73,29 @@ cp config.local.example.yaml config.local.yaml
 ## API 接口
 
 **变更标识：** `[NEW]` 本次新增 · `[CHANGED]` 本次变更（对接时请优先关注）
+
+**OpenAPI / Swagger：** 服务启动后访问 `/swagger/index.html`；接口按路由前缀分组（`auth` · `payments` · `courses` · `proposals` 等）；修改注释后于 `src/` 执行 `make swagger` 或 `go run github.com/swaggo/swag/cmd/swag@latest init -g cmd/server/main.go -o docs --parseDependency --parseInternal` 重新生成。
+
+### API 变更一览（v2.7）
+
+| 接口 | 鉴权 | 标识 | 说明 |
+|------|------|------|------|
+| `GET /v1/governance/nodes` | 无 | `[NEW]` | 治理节点白名单配置 |
+| `GET /v1/proposals` | 无 | `[NEW]` | 分页提案列表 |
+| `GET /v1/proposals/:id` | 无 | `[NEW]` | 提案详情（可选含投票/评论） |
+| `GET /v1/proposals/:id/vote-summary` | 无 | `[NEW]` | 投票计票摘要 |
+| `GET /v1/proposals/:id/votes` | 无 | `[NEW]` | 投票列表 |
+| `GET /v1/proposals/:id/votes/me` | JWT | `[NEW]` | 当前用户投票 |
+| `GET /v1/proposals/:id/comments` | 无 | `[NEW]` | 评论列表 |
+| `POST /v1/proposals` | JWT | `[NEW]` | 创建草稿（市政厅/节点共识） |
+| `PATCH /v1/proposals/:id` | JWT | `[NEW]` | 修改草稿 |
+| `POST /v1/proposals/:id/close` | JWT | `[NEW]` | 关闭草稿 |
+| `POST /v1/proposals/:id/publish` | JWT | `[NEW]` | 发布进入公示 |
+| `POST /v1/proposals/:id/finalize` | JWT | `[NEW]` | 投票结束后结票 |
+| `POST /v1/proposals/:id/votes` | JWT | `[NEW]` | 投票（一 SNS 一票） |
+| `POST /v1/proposals/:id/comments` | JWT | `[NEW]` | 发表评论 |
+
+**v2.7 治理接口说明**见 **[docs/API_GOVERNANCE.md](docs/API_GOVERNANCE.md)**。
 
 ### API 变更一览（v2.6）
 
@@ -134,6 +159,14 @@ cp config.local.example.yaml config.local.yaml
 | 40017 | 订单 token 必填 |
 | 40018 | 订单 token 无效 |
 | 40019 | 订单已被认领 |
+| 40020 | 提案不存在 |
+| 40021 | 提案操作无权限 |
+| 40022 | 提案状态不允许 |
+| 40023 | 不在投票期 |
+| 40024 | 已投过票 |
+| 40025 | 不在投票人白名单 |
+| 40026 | 需绑定 SNS |
+| 40027 | 未找到该用户投票 |
 | 42901 | 发送过于频繁 |
 | 50000 | 服务器内部错误 |
 

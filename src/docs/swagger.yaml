@@ -1,0 +1,1301 @@
+basePath: /
+definitions:
+  github_com_seedao_seedao-api-server_internal_pkg_response.Envelope:
+    properties:
+      code:
+        type: integer
+      data: {}
+      detail:
+        type: string
+      message:
+        type: string
+    type: object
+  github_com_seedao_seedao-api-server_internal_service.GovernanceNodesResult:
+    properties:
+      hall_proposal_sns:
+        items:
+          type: string
+        type: array
+      hall_voter_sns:
+        items:
+          type: string
+        type: array
+      node_consensus_proposal_sns:
+        items:
+          type: string
+        type: array
+      node_voter_sns:
+        items:
+          type: string
+        type: array
+      quarter_node_total:
+        type: integer
+    type: object
+  github_com_seedao_seedao-api-server_internal_service.ProposalCommentItem:
+    properties:
+      author_wallet:
+        type: string
+      commented_at:
+        type: string
+      content:
+        type: string
+      id:
+        type: integer
+      is_reject:
+        type: boolean
+      parent_id:
+        type: integer
+      sns_name:
+        type: string
+    type: object
+  github_com_seedao_seedao-api-server_internal_service.ProposalDetail:
+    properties:
+      comments:
+        items:
+          $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_service.ProposalCommentItem'
+        type: array
+      content:
+        items:
+          type: integer
+        type: array
+      created_at:
+        type: string
+      id:
+        type: integer
+      proposer_sns:
+        type: string
+      proposer_wallet:
+        type: string
+      publicity_end_at:
+        type: string
+      publicity_seconds:
+        type: integer
+      published_at:
+        type: string
+      resolution_rule:
+        type: string
+      status:
+        type: string
+      title:
+        type: string
+      type:
+        type: string
+      updated_at:
+        type: string
+      vote_duration_seconds:
+        type: integer
+      vote_end_at:
+        type: string
+      vote_options:
+        items:
+          type: integer
+        type: array
+      vote_summary:
+        $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_service.VoteTally'
+      vote_type:
+        type: integer
+      votes:
+        items:
+          $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_service.ProposalVoteItem'
+        type: array
+    type: object
+  github_com_seedao_seedao-api-server_internal_service.ProposalListItem:
+    properties:
+      comment_count:
+        type: integer
+      created_at:
+        type: string
+      id:
+        type: integer
+      proposer_sns:
+        type: string
+      publicity_end_at:
+        type: string
+      published_at:
+        type: string
+      status:
+        type: string
+      title:
+        type: string
+      type:
+        type: string
+      vote_count:
+        type: integer
+      vote_end_at:
+        type: string
+    type: object
+  github_com_seedao_seedao-api-server_internal_service.ProposalListResult:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_service.ProposalListItem'
+        type: array
+      next_before:
+        type: integer
+    type: object
+  github_com_seedao_seedao-api-server_internal_service.ProposalResponse:
+    properties:
+      content:
+        items:
+          type: integer
+        type: array
+      created_at:
+        type: string
+      id:
+        type: integer
+      proposer_sns:
+        type: string
+      proposer_wallet:
+        type: string
+      publicity_end_at:
+        type: string
+      publicity_seconds:
+        type: integer
+      published_at:
+        type: string
+      resolution_rule:
+        type: string
+      status:
+        type: string
+      title:
+        type: string
+      type:
+        type: string
+      updated_at:
+        type: string
+      vote_duration_seconds:
+        type: integer
+      vote_end_at:
+        type: string
+      vote_options:
+        items:
+          type: integer
+        type: array
+      vote_type:
+        type: integer
+    type: object
+  github_com_seedao_seedao-api-server_internal_service.ProposalVoteItem:
+    properties:
+      id:
+        type: integer
+      sns_name:
+        type: string
+      vote_result:
+        type: string
+      vote_weight:
+        type: integer
+      voted_at:
+        type: string
+      voter_wallet:
+        type: string
+    type: object
+  github_com_seedao_seedao-api-server_internal_service.VoteTally:
+    properties:
+      abstain_count:
+        type: integer
+      approve_count:
+        type: integer
+      approve_rate:
+        type: number
+      by_result:
+        additionalProperties:
+          type: integer
+        type: object
+      participation_rate:
+        type: number
+      passed:
+        type: boolean
+      reject_count:
+        type: integer
+      resolution_reason:
+        type: string
+      resolution_rule:
+        type: string
+      resolved:
+        type: boolean
+      total_votes:
+        type: integer
+      valid_votes:
+        type: integer
+    type: object
+  internal_handler.castVoteRequest:
+    properties:
+      vote_result:
+        type: string
+    type: object
+  internal_handler.claimCourseOrderRequest:
+    properties:
+      order_no:
+        type: string
+      order_token:
+        type: string
+    type: object
+  internal_handler.courseCheckoutPreviewRequest:
+    properties:
+      apply_member_discount:
+        type: boolean
+      channel_code:
+        type: string
+      course_id:
+        type: string
+      sku_id:
+        type: string
+    type: object
+  internal_handler.createCommentRequest:
+    properties:
+      content:
+        type: string
+      is_reject:
+        type: boolean
+      parent_id:
+        type: integer
+    type: object
+  internal_handler.createCourseOrderRequest:
+    properties:
+      apply_member_discount:
+        type: boolean
+      channel_code:
+        type: string
+      course_id:
+        type: string
+      pay_channel:
+        type: string
+      sku_id:
+        type: string
+    type: object
+  internal_handler.createPaymentOrderRequest:
+    properties:
+      coupon_code:
+        type: string
+      days:
+        type: integer
+      pay_channel:
+        type: string
+      product_type:
+        type: string
+    type: object
+  internal_handler.createProposalRequest:
+    properties:
+      content:
+        items:
+          type: integer
+        type: array
+      resolution_rule:
+        type: string
+      title:
+        type: string
+      type:
+        type: string
+    type: object
+  internal_handler.loginRequest:
+    properties:
+      code:
+        type: string
+      phone:
+        type: string
+    type: object
+  internal_handler.previewCouponRequest:
+    properties:
+      coupon_code:
+        type: string
+      days:
+        type: integer
+      product_type:
+        type: string
+    type: object
+  internal_handler.publishProposalRequest:
+    properties:
+      publicity_seconds:
+        type: integer
+      vote_duration_seconds:
+        type: integer
+    type: object
+  internal_handler.registerRequest:
+    properties:
+      code:
+        type: string
+      domain:
+        type: string
+      message:
+        type: string
+      phone:
+        type: string
+      register_type:
+        type: string
+      signature:
+        type: string
+      sns_name:
+        type: string
+      wallet:
+        type: string
+      wallet_type:
+        type: string
+    type: object
+  internal_handler.renewMembershipRequest:
+    properties:
+      days:
+        type: integer
+    type: object
+  internal_handler.sendSMSRequest:
+    properties:
+      phone:
+        type: string
+    type: object
+  internal_handler.simulatePayRequest:
+    properties:
+      order_no:
+        type: string
+    type: object
+  internal_handler.updateProposalRequest:
+    properties:
+      content:
+        items:
+          type: integer
+        type: array
+      title:
+        type: string
+    type: object
+  internal_handler.verifySNSRequest:
+    properties:
+      domain:
+        type: string
+      message:
+        type: string
+      signature:
+        type: string
+      wallet:
+        type: string
+      wallet_type:
+        type: string
+    type: object
+  internal_handler.walletNonceRequest:
+    properties:
+      domain:
+        type: string
+      wallet:
+        type: string
+    type: object
+host: api.seedao.xyz
+info:
+  contact: {}
+  description: SeeDAO 后端 API（认证、支付、课程、治理提案等）
+  title: SeeDAO API Server
+  version: "2.7"
+paths:
+  /health:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope'
+      summary: 健康检查
+      tags:
+      - health
+  /v1/auth/login:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 登录
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handler.loginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope'
+      summary: 手机号登录
+      tags:
+      - auth
+  /v1/auth/phone/check:
+    get:
+      parameters:
+      - description: E.164 手机号
+        in: query
+        name: phone
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope'
+      summary: 检查手机号是否可注册
+      tags:
+      - auth
+  /v1/auth/register:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 注册
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handler.registerRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope'
+      summary: 注册（新 SNS / 认领存量 SNS）
+      tags:
+      - auth
+  /v1/auth/sms/send:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 手机号
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handler.sendSMSRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope'
+        "429":
+          description: Too Many Requests
+          schema:
+            $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope'
+      summary: 发送短信验证码
+      tags:
+      - auth
+  /v1/courses/checkout/preview:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 试算参数
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handler.courseCheckoutPreviewRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope'
+      summary: 课程价格试算
+      tags:
+      - courses
+  /v1/courses/dev/orders/{order_no}/simulate-pay:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 订单号
+        in: path
+        name: order_no
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope'
+      summary: 模拟课程支付（仅 dev_mode）
+      tags:
+      - courses
+  /v1/courses/orders:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 下单
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handler.createCourseOrderRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope'
+      summary: 创建课程订单
+      tags:
+      - courses
+  /v1/courses/orders/{order_no}:
+    get:
+      parameters:
+      - description: 订单号
+        in: path
+        name: order_no
+        required: true
+        type: string
+      - description: 匿名订单 token
+        in: query
+        name: token
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope'
+      summary: 查询课程订单
+      tags:
+      - courses
+  /v1/courses/orders/{order_no}/close:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 订单号
+        in: path
+        name: order_no
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope'
+      summary: 关闭课程订单
+      tags:
+      - courses
+  /v1/courses/orders/claim:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 认领
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handler.claimCourseOrderRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope'
+      security:
+      - BearerAuth: []
+      summary: 认领匿名课程订单
+      tags:
+      - courses
+  /v1/governance/nodes:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_service.GovernanceNodesResult'
+              type: object
+      summary: 获取治理节点白名单配置
+      tags:
+      - governance
+  /v1/payments/coupons/preview:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 券码试算
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handler.previewCouponRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope'
+      security:
+      - BearerAuth: []
+      summary: 会员续费优惠券试算
+      tags:
+      - payments
+  /v1/payments/dev/simulate-pay:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 订单号
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handler.simulatePayRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope'
+      security:
+      - BearerAuth: []
+      summary: 模拟支付（仅 dev_mode）
+      tags:
+      - payments
+  /v1/payments/orders:
+    get:
+      parameters:
+      - description: 条数，默认 20
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope'
+      security:
+      - BearerAuth: []
+      summary: 支付订单列表
+      tags:
+      - payments
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 下单
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handler.createPaymentOrderRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope'
+      security:
+      - BearerAuth: []
+      summary: 创建支付订单（会员续费）
+      tags:
+      - payments
+  /v1/payments/orders/{order_no}:
+    get:
+      parameters:
+      - description: 订单号
+        in: path
+        name: order_no
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope'
+      security:
+      - BearerAuth: []
+      summary: 查询支付订单
+      tags:
+      - payments
+  /v1/payments/orders/{order_no}/close:
+    post:
+      parameters:
+      - description: 订单号
+        in: path
+        name: order_no
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope'
+      security:
+      - BearerAuth: []
+      summary: 关闭未支付订单
+      tags:
+      - payments
+  /v1/payments/wechat/notify:
+    post:
+      consumes:
+      - application/json
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: 微信支付回调（微信服务器调用）
+      tags:
+      - payments
+  /v1/proposals:
+    get:
+      parameters:
+      - description: 每页条数，默认 20，最大 50
+        in: query
+        name: limit
+        type: integer
+      - description: 游标：返回 id 小于此值的记录
+        in: query
+        name: before_id
+        type: integer
+      - description: 提案类型
+        in: query
+        name: type
+        type: string
+      - description: 提案状态
+        in: query
+        name: status
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_service.ProposalListResult'
+              type: object
+      summary: 分页获取提案列表
+      tags:
+      - proposals
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 提案内容
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handler.createProposalRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_service.ProposalResponse'
+              type: object
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope'
+      security:
+      - BearerAuth: []
+      summary: 创建提案草稿
+      tags:
+      - proposals
+  /v1/proposals/{id}:
+    get:
+      parameters:
+      - description: 提案 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 是否包含投票列表
+        in: query
+        name: include_votes
+        type: boolean
+      - description: 是否包含评论列表
+        in: query
+        name: include_comments
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_service.ProposalDetail'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope'
+      summary: 获取提案详情
+      tags:
+      - proposals
+    patch:
+      consumes:
+      - application/json
+      parameters:
+      - description: 提案 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 更新字段
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handler.updateProposalRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_service.ProposalResponse'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 修改提案草稿
+      tags:
+      - proposals
+  /v1/proposals/{id}/close:
+    post:
+      parameters:
+      - description: 提案 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_service.ProposalResponse'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 关闭提案草稿
+      tags:
+      - proposals
+  /v1/proposals/{id}/comments:
+    get:
+      parameters:
+      - description: 提案 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 条数上限
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope'
+      summary: 获取提案评论列表
+      tags:
+      - proposals
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 提案 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 评论内容
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handler.createCommentRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_service.ProposalCommentItem'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 发表评论
+      tags:
+      - proposals
+  /v1/proposals/{id}/finalize:
+    post:
+      description: 根据元规则计票并将状态更新为 vote_passed 或 vote_failed
+      parameters:
+      - description: 提案 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_service.ProposalDetail'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 投票结束后结票
+      tags:
+      - proposals
+  /v1/proposals/{id}/publish:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 提案 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 公示/投票时长
+        in: body
+        name: body
+        schema:
+          $ref: '#/definitions/internal_handler.publishProposalRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_service.ProposalResponse'
+              type: object
+      security:
+      - BearerAuth: []
+      summary: 发布提案（进入公示期）
+      tags:
+      - proposals
+  /v1/proposals/{id}/vote-summary:
+    get:
+      parameters:
+      - description: 提案 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_service.VoteTally'
+              type: object
+      summary: 获取提案投票计票摘要
+      tags:
+      - proposals
+  /v1/proposals/{id}/votes:
+    get:
+      parameters:
+      - description: 提案 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 条数上限
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope'
+      summary: 获取提案投票列表
+      tags:
+      - proposals
+    post:
+      consumes:
+      - application/json
+      description: 节点白名单内 SNS 可投票；同一 SNS 对同一提案仅可投一票
+      parameters:
+      - description: 提案 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: 投票选项，如 1/-1/0
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handler.castVoteRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_service.ProposalVoteItem'
+              type: object
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope'
+      security:
+      - BearerAuth: []
+      summary: 对提案投票
+      tags:
+      - proposals
+  /v1/proposals/{id}/votes/me:
+    get:
+      parameters:
+      - description: 提案 ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_service.ProposalVoteItem'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope'
+      security:
+      - BearerAuth: []
+      summary: 获取当前用户对提案的投票
+      tags:
+      - proposals
+  /v1/sns/check:
+    get:
+      parameters:
+      - description: SNS 名称
+        in: query
+        name: sns_name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope'
+      summary: 检查 SNS 名称是否可用
+      tags:
+      - sns
+  /v1/stats/user-count:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope'
+      summary: 获取用户总数
+      tags:
+      - stats
+  /v1/user/membership/renew:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 续费天数
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handler.renewMembershipRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope'
+      security:
+      - BearerAuth: []
+      summary: 续费会员（运维/测试）
+      tags:
+      - user
+  /v1/user/profile:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope'
+      security:
+      - BearerAuth: []
+      summary: 获取当前用户资料
+      tags:
+      - user
+  /v1/wallet/nonce:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: 钱包与域名
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handler.walletNonceRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope'
+      summary: 获取钱包 SIWE nonce
+      tags:
+      - wallet
+  /v1/wallet/verify-sns:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: SIWE 验签
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/internal_handler.verifySNSRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope'
+      summary: 验证钱包签名并查询可认领 SNS
+      tags:
+      - wallet
+securityDefinitions:
+  BearerAuth:
+    description: JWT Bearer token，格式：Bearer {token}
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
+tags:
+- description: 健康检查
+  name: health
+- description: 认证 /v1/auth
+  name: auth
+- description: SNS /v1/sns
+  name: sns
+- description: 钱包 SIWE /v1/wallet
+  name: wallet
+- description: 统计 /v1/stats
+  name: stats
+- description: 用户 /v1/user
+  name: user
+- description: 支付 /v1/payments
+  name: payments
+- description: 课程 /v1/courses
+  name: courses
+- description: 治理配置 /v1/governance
+  name: governance
+- description: 提案 /v1/proposals
+  name: proposals

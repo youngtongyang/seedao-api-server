@@ -15,6 +15,7 @@ type Config struct {
 	AliyunSMS AliyunSMSConfig `yaml:"aliyun_sms"`
 	SIWE      SIWEConfig      `yaml:"siwe"`
 	WechatPay WechatPayConfig `yaml:"wechat_pay"`
+	Governance GovernanceConfig `yaml:"governance"`
 }
 
 type ServerConfig struct {
@@ -67,6 +68,16 @@ type WechatPayConfig struct {
 	Description          string `yaml:"description"`
 }
 
+type GovernanceConfig struct {
+	QuarterNodeTotal           int      `yaml:"quarter_node_total"`
+	HallProposalSNS            []string `yaml:"hall_proposal_sns"`
+	NodeConsensusProposalSNS   []string `yaml:"node_consensus_proposal_sns"`
+	HallVoterSNS               []string `yaml:"hall_voter_sns"`
+	NodeVoterSNS               []string `yaml:"node_voter_sns"`
+	DefaultPublicitySeconds    int      `yaml:"default_publicity_seconds"`
+	DefaultVoteDurationSeconds int      `yaml:"default_vote_duration_seconds"`
+}
+
 func Load(path string) (*Config, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -104,6 +115,12 @@ func Load(path string) (*Config, error) {
 	}
 	if cfg.Redis.Password == "" {
 		return nil, fmt.Errorf("redis.password is required")
+	}
+	if cfg.Governance.DefaultPublicitySeconds == 0 {
+		cfg.Governance.DefaultPublicitySeconds = 432000
+	}
+	if cfg.Governance.DefaultVoteDurationSeconds == 0 {
+		cfg.Governance.DefaultVoteDurationSeconds = 172800
 	}
 
 	return &cfg, nil

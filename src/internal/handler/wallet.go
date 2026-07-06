@@ -24,6 +24,14 @@ type walletNonceRequest struct {
 	Domain string `json:"domain"`
 }
 
+// Nonce godoc
+// @Summary      获取钱包 SIWE nonce
+// @Tags         wallet
+// @Accept       json
+// @Produce      json
+// @Param        body  body  walletNonceRequest  true  "钱包与域名"
+// @Success      200  {object}  response.Envelope
+// @Router       /v1/wallet/nonce [post]
 func (h *WalletHandler) Nonce(c echo.Context) error {
 	var req walletNonceRequest
 	if err := c.Bind(&req); err != nil {
@@ -45,6 +53,14 @@ type verifySNSRequest struct {
 	Signature  string `json:"signature"`
 }
 
+// VerifySNS godoc
+// @Summary      验证钱包签名并查询可认领 SNS
+// @Tags         wallet
+// @Accept       json
+// @Produce      json
+// @Param        body  body  verifySNSRequest  true  "SIWE 验签"
+// @Success      200  {object}  response.Envelope
+// @Router       /v1/wallet/verify-sns [post]
 func (h *WalletHandler) VerifySNS(c echo.Context) error {
 	var req verifySNSRequest
 	if err := c.Bind(&req); err != nil {

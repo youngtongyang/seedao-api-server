@@ -15,6 +15,12 @@ func NewStatsHandler(stats *service.StatsService) *StatsHandler {
 	return &StatsHandler{stats: stats}
 }
 
+// UserCount godoc
+// @Summary      获取用户总数
+// @Tags         stats
+// @Produce      json
+// @Success      200  {object}  response.Envelope
+// @Router       /v1/stats/user-count [get]
 func (h *StatsHandler) UserCount(c echo.Context) error {
 	result, err := h.stats.GetUserCount()
 	if err != nil {

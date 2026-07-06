@@ -18,6 +18,14 @@ func NewProfileHandler(profile *service.ProfileService) *ProfileHandler {
 	return &ProfileHandler{profile: profile}
 }
 
+// Get godoc
+// @Summary      获取当前用户资料
+// @Tags         user
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200  {object}  response.Envelope
+// @Failure      401  {object}  response.Envelope
+// @Router       /v1/user/profile [get]
 func (h *ProfileHandler) Get(c echo.Context) error {
 	userID, ok := middleware.UserIDFromContext(c)
 	if !ok {

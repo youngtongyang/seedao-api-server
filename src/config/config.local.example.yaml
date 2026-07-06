@@ -44,3 +44,12 @@ wechat_pay:
   membership_price_fen: 9900
   order_expire_minutes: 15
   description: "SeeDAO 会员续费"
+
+governance:
+  quarter_node_total: 20
+  hall_proposal_sns: []
+  node_consensus_proposal_sns: []
+  hall_voter_sns: []
+  node_voter_sns: []
+  default_publicity_seconds: 432000
+  default_vote_duration_seconds: 172800

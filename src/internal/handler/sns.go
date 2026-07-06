@@ -18,6 +18,13 @@ func NewSNSHandler(sns *service.SNSService) *SNSHandler {
 	return &SNSHandler{sns: sns}
 }
 
+// Check godoc
+// @Summary      检查 SNS 名称是否可用
+// @Tags         sns
+// @Produce      json
+// @Param        sns_name  query  string  true  "SNS 名称"
+// @Success      200  {object}  response.Envelope
+// @Router       /v1/sns/check [get]
 func (h *SNSHandler) Check(c echo.Context) error {
 	snsName := c.QueryParam("sns_name")
 	if snsName == "" {

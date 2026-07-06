@@ -22,6 +22,14 @@ const (
 	CourseOrderTokenRequired = 40017
 	CourseOrderTokenInvalid  = 40018
 	CourseOrderClaimed       = 40019
+	ProposalNotFound         = 40020
+	ProposalForbidden        = 40021
+	ProposalInvalidStatus    = 40022
+	ProposalVoteClosed       = 40023
+	ProposalAlreadyVoted     = 40024
+	ProposalNotVoter         = 40025
+	ProposalSNSRequired      = 40026
+	ProposalVoteNotFound     = 40027
 	InternalError       = 50000
 )
 
@@ -47,6 +55,14 @@ var messages = map[int]string{
 	CourseOrderTokenRequired: "order token required",
 	CourseOrderTokenInvalid:  "order token invalid",
 	CourseOrderClaimed:       "order already claimed",
+	ProposalNotFound:         "proposal not found",
+	ProposalForbidden:        "proposal operation forbidden",
+	ProposalInvalidStatus:    "proposal status invalid",
+	ProposalVoteClosed:       "proposal voting closed",
+	ProposalAlreadyVoted:     "already voted on this proposal",
+	ProposalNotVoter:         "not eligible to vote",
+	ProposalSNSRequired:      "sns required for governance action",
+	ProposalVoteNotFound:     "vote not found for this proposal",
 	InternalError:      "internal server error",
 }
 

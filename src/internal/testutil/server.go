@@ -67,6 +67,15 @@ func NewTestServer(t *testing.T) *TestServer {
 			OrderExpireMinutes: 15,
 			Description:        "SeeDAO 会员续费",
 		},
+		Governance: config.GovernanceConfig{
+			QuarterNodeTotal:           4,
+			HallProposalSNS:            []string{"hall.seedao"},
+			NodeConsensusProposalSNS:   []string{"node.seedao"},
+			HallVoterSNS:               []string{"hall_voter.seedao"},
+			NodeVoterSNS:               []string{"node_voter.seedao"},
+			DefaultPublicitySeconds:    60,
+			DefaultVoteDurationSeconds: 120,
+		},
 	}
 
 	redis := redisstore.New(cfg.Redis)
@@ -188,6 +197,49 @@ func (ts *TestServer) SeedRegistry(t *testing.T, wallet, snsName string) {
 		CreatedAt: now,
 		UpdatedAt: now,
 	}).Error)
+}
+
+func (ts *TestServer) RegisterAndToken(t *testing.T, phoneNum, snsName string) string {
+	t.Helper()
+	ts.SetSMSCode(t, phoneNum, "123456")
+	rec := DoJSON(t, ts.Echo, http.MethodPost, "/v1/auth/register", map[string]string{
+		"phone":         phoneNum,
+		"code":          "123456",
+		"register_type": "new_sns",
+		"sns_name":      snsName,
+	}, nil)
+	resp := ParseResponse(t, rec)
+	data := ParseData[map[string]interface{}](t, resp.Data)
+	return data["token"].(string)
+}
+
+func (ts *TestServer) SeedPublishedProposal(t *testing.T, proposerSNS string, proposalType string, voteOpen bool) int64 {
+	t.Helper()
+	now := time.Now()
+	pubEnd := now.Add(-time.Minute)
+	voteEnd := now.Add(2 * time.Hour)
+	if !voteOpen {
+		voteEnd = now.Add(-time.Minute)
+	}
+	sns := proposerSNS
+	p := model.Proposal{
+		Type:           proposalType,
+		Title:          "Test Proposal",
+		Content:        []byte(`{"plain_text":"hello"}`),
+		ProposerSNS:    &sns,
+		ProposerWallet: "0xabc",
+		Status:         model.ProposalStatusPublicity,
+		VoteType:       model.ProposalVoteTypeStandard,
+		VoteOptions:    []byte(`[{"label":"同意","value":"1"}]`),
+		ResolutionRule: model.ProposalResolutionStandard,
+		PublishedAt:    &now,
+		PublicityEndAt: &pubEnd,
+		VoteEndAt:      &voteEnd,
+		CreatedAt:      now,
+		UpdatedAt:      now,
+	}
+	require.NoError(t, ts.DB.Create(&p).Error)
+	return p.ID
 }
 
 func DoJSON(t *testing.T, e *echo.Echo, method, path string, body interface{}, headers map[string]string) *httptest.ResponseRecorder {

@@ -23,6 +23,15 @@ type renewMembershipRequest struct {
 	Days int `json:"days"`
 }
 
+// Renew godoc
+// @Summary      续费会员（运维/测试）
+// @Tags         user
+// @Accept       json
+// @Produce      json
+// @Security     BearerAuth
+// @Param        body  body  renewMembershipRequest  true  "续费天数"
+// @Success      200  {object}  response.Envelope
+// @Router       /v1/user/membership/renew [post]
 func (h *MembershipHandler) Renew(c echo.Context) error {
 	userID, ok := middleware.UserIDFromContext(c)
 	if !ok {

@@ -16,6 +16,38 @@ import (
 	"github.com/seedao/seedao-api-server/internal/pkg/redisstore"
 )
 
+// @title           SeeDAO API Server
+// @version         2.7
+// @description     SeeDAO 后端 API（认证、支付、课程、治理提案等）
+// @host            api.seedao.xyz
+// @BasePath        /
+//
+// @tag.name        health
+// @tag.description 健康检查
+// @tag.name        auth
+// @tag.description 认证 /v1/auth
+// @tag.name        sns
+// @tag.description SNS /v1/sns
+// @tag.name        wallet
+// @tag.description 钱包 SIWE /v1/wallet
+// @tag.name        stats
+// @tag.description 统计 /v1/stats
+// @tag.name        user
+// @tag.description 用户 /v1/user
+// @tag.name        payments
+// @tag.description 支付 /v1/payments
+// @tag.name        courses
+// @tag.description 课程 /v1/courses
+// @tag.name        governance
+// @tag.description 治理配置 /v1/governance
+// @tag.name        proposals
+// @tag.description 提案 /v1/proposals
+//
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description     JWT Bearer token，格式：Bearer {token}
+
 func defaultConfigPath() string {
 	if env := os.Getenv("CONFIG_PATH"); env != "" {
 		return env
