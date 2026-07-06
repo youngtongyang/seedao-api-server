@@ -419,12 +419,6 @@ func (h *ProposalHandler) Finalize(c echo.Context) error {
 	return response.OK(c, result)
 }
 
-// GovernanceNodes godoc
-// @Summary      获取治理节点白名单配置
-// @Tags         governance
-// @Produce      json
-// @Success      200  {object}  response.Envelope{data=service.GovernanceNodesResult}
-// @Router       /v1/governance/nodes [get]
 func (h *ProposalHandler) GovernanceNodes(c echo.Context) error {
 	return response.OK(c, h.proposals.GovernanceNodes())
 }

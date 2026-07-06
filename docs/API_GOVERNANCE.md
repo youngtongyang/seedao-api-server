@@ -62,7 +62,7 @@ governance:
 ## Swagger
 
 - 启动服务后访问：`http://127.0.0.1:8080/swagger/index.html`
-- 按路由分组 Tag：`health` · `auth` · `sns` · `wallet` · `stats` · `user` · `payments` · `courses` · `governance` · `proposals`
+- 按路由分组 Tag：`health` · `auth` · `sns` · `wallet` · `stats` · `user` · `payments` · `courses` · `proposals`（`/v1/governance/nodes` 不对外展示于 Swagger）
 - 重新生成文档：
 
 ```bash

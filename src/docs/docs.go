@@ -385,37 +385,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/v1/governance/nodes": {
-            "get": {
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "governance"
-                ],
-                "summary": "获取治理节点白名单配置",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "allOf": [
-                                {
-                                    "$ref": "#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope"
-                                },
-                                {
-                                    "type": "object",
-                                    "properties": {
-                                        "data": {
-                                            "$ref": "#/definitions/github_com_seedao_seedao-api-server_internal_service.GovernanceNodesResult"
-                                        }
-                                    }
-                                }
-                            ]
-                        }
-                    }
-                }
-            }
-        },
         "/v1/payments/coupons/preview": {
             "post": {
                 "security": [
@@ -1496,38 +1465,6 @@ const docTemplate = `{
                 }
             }
         },
-        "github_com_seedao_seedao-api-server_internal_service.GovernanceNodesResult": {
-            "type": "object",
-            "properties": {
-                "hall_proposal_sns": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "hall_voter_sns": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "node_consensus_proposal_sns": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "node_voter_sns": {
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                },
-                "quarter_node_total": {
-                    "type": "integer"
-                }
-            }
-        },
         "github_com_seedao_seedao-api-server_internal_service.ProposalCommentItem": {
             "type": "object",
             "properties": {
@@ -2097,10 +2034,6 @@ const docTemplate = `{
         {
             "description": "课程 /v1/courses",
             "name": "courses"
-        },
-        {
-            "description": "治理配置 /v1/governance",
-            "name": "governance"
         },
         {
             "description": "提案 /v1/proposals",

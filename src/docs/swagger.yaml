@@ -10,27 +10,6 @@ definitions:
       message:
         type: string
     type: object
-  github_com_seedao_seedao-api-server_internal_service.GovernanceNodesResult:
-    properties:
-      hall_proposal_sns:
-        items:
-          type: string
-        type: array
-      hall_voter_sns:
-        items:
-          type: string
-        type: array
-      node_consensus_proposal_sns:
-        items:
-          type: string
-        type: array
-      node_voter_sns:
-        items:
-          type: string
-        type: array
-      quarter_node_total:
-        type: integer
-    type: object
   github_com_seedao_seedao-api-server_internal_service.ProposalCommentItem:
     properties:
       author_wallet:
@@ -618,23 +597,6 @@ paths:
       summary: 认领匿名课程订单
       tags:
       - courses
-  /v1/governance/nodes:
-    get:
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            allOf:
-            - $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope'
-            - properties:
-                data:
-                  $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_service.GovernanceNodesResult'
-              type: object
-      summary: 获取治理节点白名单配置
-      tags:
-      - governance
   /v1/payments/coupons/preview:
     post:
       consumes:
@@ -1295,7 +1257,5 @@ tags:
   name: payments
 - description: 课程 /v1/courses
   name: courses
-- description: 治理配置 /v1/governance
-  name: governance
 - description: 提案 /v1/proposals
   name: proposals

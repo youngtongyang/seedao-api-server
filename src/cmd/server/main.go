@@ -38,8 +38,6 @@ import (
 // @tag.description 支付 /v1/payments
 // @tag.name        courses
 // @tag.description 课程 /v1/courses
-// @tag.name        governance
-// @tag.description 治理配置 /v1/governance
 // @tag.name        proposals
 // @tag.description 提案 /v1/proposals
 //
