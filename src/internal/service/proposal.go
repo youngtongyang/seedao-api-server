@@ -156,10 +156,12 @@ func (s *ProposalService) List(limit int, beforeID int64, proposalType, status s
 	}
 	if status != "" {
 		q = q.Where("status = ?", status)
+	} else {
+		q = q.Where("status <> ?", model.ProposalStatusError)
 	}
 	if beforeID > 0 {
-		var anchor model.Proposal
-		if err := s.db.Select("id", "created_at").First(&anchor, beforeID).Error; err != nil {
+		anchor, err := s.getProposal(beforeID)
+		if err != nil {
 			return &ProposalListResult{Items: []ProposalListItem{}}, nil
 		}
 		q = q.Where("(created_at < ?) OR (created_at = ? AND id < ?)", anchor.CreatedAt, anchor.CreatedAt, anchor.ID)
@@ -172,15 +174,15 @@ func (s *ProposalService) List(limit int, beforeID int64, proposalType, status s
 
 	var nextBefore *int64
 	if len(rows) > limit {
-		id := rows[limit].ID
-		nextBefore = &id
+		pubID := publicProposalID(&rows[limit])
+		nextBefore = &pubID
 		rows = rows[:limit]
 	}
 
 	items := make([]ProposalListItem, 0, len(rows))
 	for _, p := range rows {
 		item := ProposalListItem{
-			ID:          p.ID,
+			ID:          publicProposalID(&p),
 			Type:        p.Type,
 			Title:       p.Title,
 			Status:      p.Status,
@@ -557,13 +559,20 @@ func (s *ProposalService) canFinalize(p *model.Proposal, actorSNS string) bool {
 
 func (s *ProposalService) getProposal(id int64) (*model.Proposal, error) {
 	var p model.Proposal
-	if err := s.db.First(&p, id).Error; err != nil {
+	if err := s.db.Where("id = ? OR legacy_id = ?", id, id).First(&p).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, ErrProposalNotFound
 		}
 		return nil, err
 	}
 	return &p, nil
+}
+
+func publicProposalID(p *model.Proposal) int64 {
+	if p.LegacyID != nil && *p.LegacyID > 0 {
+		return *p.LegacyID
+	}
+	return p.ID
 }
 
 func (s *ProposalService) isProposer(p *model.Proposal, sns string) bool {
@@ -649,7 +658,7 @@ func (s *ProposalService) listComments(proposalID int64, limit int) ([]ProposalC
 
 func toProposalResponse(p *model.Proposal) ProposalResponse {
 	resp := ProposalResponse{
-		ID:             p.ID,
+		ID:             publicProposalID(p),
 		Type:           p.Type,
 		Title:          p.Title,
 		Content:        json.RawMessage(p.Content),

@@ -15,6 +15,7 @@ const (
 	ProposalStatusExecuted   = "executed"
 	ProposalStatusRejected   = "rejected"
 	ProposalStatusWithdrawn  = "withdrawn"
+	ProposalStatusError      = "error" // legacy import only; excluded from public list
 
 	ProposalResolutionStandard = "standard"
 	ProposalResolutionMetaRule = "meta_rule"

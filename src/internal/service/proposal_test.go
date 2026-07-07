@@ -228,3 +228,47 @@ func TestProposalListOrderByCreatedAt(t *testing.T) {
 	require.Len(t, page2.Items, 1)
 	assert.Equal(t, "older", page2.Items[0].Title)
 }
+
+func TestProposalListExcludesErrorStatus(t *testing.T) {
+	svc := newProposalTestDB(t)
+	sns := "legacy"
+	now := time.Now()
+
+	for _, p := range []model.Proposal{
+		{Type: model.ProposalTypeHallRegular, Title: "ok", Content: []byte(`{}`), ProposerSNS: &sns, ProposerWallet: "0x1", Status: model.ProposalStatusVotePassed, ResolutionRule: model.ProposalResolutionStandard, CreatedAt: now, UpdatedAt: now},
+		{Type: model.ProposalTypeHallRegular, Title: "bad", Content: []byte(`{}`), ProposerSNS: &sns, ProposerWallet: "0x1", Status: model.ProposalStatusError, ResolutionRule: model.ProposalResolutionStandard, CreatedAt: now.Add(-time.Hour), UpdatedAt: now},
+	} {
+		require.NoError(t, svc.db.Create(&p).Error)
+	}
+
+	list, err := svc.List(10, 0, "", "")
+	require.NoError(t, err)
+	require.Len(t, list.Items, 1)
+	assert.Equal(t, "ok", list.Items[0].Title)
+}
+
+func TestGetProposalByLegacyID(t *testing.T) {
+	svc := newProposalTestDB(t)
+	sns := "legacy"
+	legacy := int64(449)
+	now := time.Now()
+	require.NoError(t, svc.db.Create(&model.Proposal{
+		ID: 123, LegacyID: &legacy, Type: model.ProposalTypeHallRegular, Title: "guide", Content: []byte(`{}`),
+		ProposerSNS: &sns, ProposerWallet: "0x1", Status: model.ProposalStatusVoteFailed,
+		ResolutionRule: model.ProposalResolutionStandard, CreatedAt: now, UpdatedAt: now,
+	}).Error)
+
+	p, err := svc.getProposal(449)
+	require.NoError(t, err)
+	assert.Equal(t, int64(123), p.ID)
+
+	detail, err := svc.GetDetail(449, false, false, 50, 50)
+	require.NoError(t, err)
+	assert.Equal(t, int64(449), detail.ID)
+	assert.Equal(t, "guide", detail.Title)
+
+	list, err := svc.List(10, 0, "", "")
+	require.NoError(t, err)
+	require.Len(t, list.Items, 1)
+	assert.Equal(t, int64(449), list.Items[0].ID)
+}
