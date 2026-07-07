@@ -170,7 +170,7 @@ cp src/config/config.dev.example.yaml src/config/config.dev.yaml
 # 编辑 config.dev.yaml，填写 redis.password 等配置
 docker compose -f docker-compose.dev.yml up -d --build
 
-# 生产环境（从 GHCR 拉镜像，需先 docker login ghcr.io）
+# 生产环境（推荐 .env 配置 SEEDAO_IMAGE 为阿里云 ACR，见 docs/DEPLOYMENT.md 三-A）
 cp src/config/config.prod.example.yaml src/config/config.prod.yaml
 docker compose -f docker-compose.prod.yml up -d
 # 更新：bash deploy/pull-deploy.sh
