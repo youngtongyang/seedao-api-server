@@ -27,7 +27,7 @@ func NewProposalHandler(proposals *service.ProposalService, profile *service.Pro
 // @Tags         proposals
 // @Produce      json
 // @Param        limit     query  int     false  "每页条数，默认 20，最大 50"
-// @Param        before_id query  int     false  "游标：返回 id 小于此值的记录"
+// @Param        before_id query  int     false  "游标：传入上一页最后一条的 id，返回更早创建的记录"
 // @Param        type      query  string  false  "提案类型"
 // @Param        status    query  string  false  "提案状态"
 // @Success      200  {object}  response.Envelope{data=service.ProposalListResult}

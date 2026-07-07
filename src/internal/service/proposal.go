@@ -158,11 +158,15 @@ func (s *ProposalService) List(limit int, beforeID int64, proposalType, status s
 		q = q.Where("status = ?", status)
 	}
 	if beforeID > 0 {
-		q = q.Where("id < ?", beforeID)
+		var anchor model.Proposal
+		if err := s.db.Select("id", "created_at").First(&anchor, beforeID).Error; err != nil {
+			return &ProposalListResult{Items: []ProposalListItem{}}, nil
+		}
+		q = q.Where("(created_at < ?) OR (created_at = ? AND id < ?)", anchor.CreatedAt, anchor.CreatedAt, anchor.ID)
 	}
 
 	var rows []model.Proposal
-	if err := q.Order("id DESC").Limit(limit + 1).Find(&rows).Error; err != nil {
+	if err := q.Order("created_at DESC, id DESC").Limit(limit + 1).Find(&rows).Error; err != nil {
 		return nil, err
 	}
 

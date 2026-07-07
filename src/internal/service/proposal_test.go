@@ -199,3 +199,32 @@ func TestProposalServiceListAndSummary(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, 0, summary.TotalVotes)
 }
+
+func TestProposalListOrderByCreatedAt(t *testing.T) {
+	svc := newProposalTestDB(t)
+	sns := "legacy"
+	older := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
+	newer := time.Date(2026, 6, 1, 0, 0, 0, 0, time.UTC)
+
+	require.NoError(t, svc.db.Create(&model.Proposal{
+		ID: 100, Type: model.ProposalTypeHallRegular, Title: "older", Content: []byte(`{}`),
+		ProposerSNS: &sns, ProposerWallet: "0x1", Status: model.ProposalStatusVotePassed,
+		ResolutionRule: model.ProposalResolutionStandard, CreatedAt: older, UpdatedAt: older,
+	}).Error)
+	require.NoError(t, svc.db.Create(&model.Proposal{
+		ID: 1, Type: model.ProposalTypeHallRegular, Title: "newer", Content: []byte(`{}`),
+		ProposerSNS: &sns, ProposerWallet: "0x1", Status: model.ProposalStatusVotePassed,
+		ResolutionRule: model.ProposalResolutionStandard, CreatedAt: newer, UpdatedAt: newer,
+	}).Error)
+
+	list, err := svc.List(10, 0, "", "")
+	require.NoError(t, err)
+	require.Len(t, list.Items, 2)
+	assert.Equal(t, "newer", list.Items[0].Title)
+	assert.Equal(t, "older", list.Items[1].Title)
+
+	page2, err := svc.List(10, list.Items[0].ID, "", "")
+	require.NoError(t, err)
+	require.Len(t, page2.Items, 1)
+	assert.Equal(t, "older", page2.Items[0].Title)
+}
