@@ -272,3 +272,12 @@ func TestGetProposalByLegacyID(t *testing.T) {
 	require.Len(t, list.Items, 1)
 	assert.Equal(t, int64(449), list.Items[0].ID)
 }
+
+func TestFormatProposalDisplayTitle(t *testing.T) {
+	num := "449"
+	assert.Equal(t, "SIP-449 专栏标题", formatProposalDisplayTitle("专栏标题", &num))
+	label := "SIP-449"
+	assert.Equal(t, "SIP-449 专栏标题", formatProposalDisplayTitle("专栏标题", &label))
+	assert.Equal(t, "专栏标题", formatProposalDisplayTitle("专栏标题", nil))
+	assert.Equal(t, "SIP-449 专栏标题", formatProposalDisplayTitle("SIP-449 专栏标题", &num))
+}

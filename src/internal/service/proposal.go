@@ -26,6 +26,7 @@ type ProposalListItem struct {
 	ID             int64   `json:"id"`
 	Type           string  `json:"type"`
 	Title          string  `json:"title"`
+	SIP            *string `json:"sip,omitempty"`
 	Status         string  `json:"status"`
 	ProposerSNS    *string `json:"proposer_sns"`
 	PublishedAt    *string `json:"published_at,omitempty"`
@@ -52,6 +53,7 @@ type ProposalResponse struct {
 	ID                  int64           `json:"id"`
 	Type                string          `json:"type"`
 	Title               string          `json:"title"`
+	SIP                 *string         `json:"sip,omitempty"`
 	Content             json.RawMessage `json:"content"`
 	ProposerSNS         *string         `json:"proposer_sns"`
 	ProposerWallet      string          `json:"proposer_wallet"`
@@ -184,7 +186,8 @@ func (s *ProposalService) List(limit int, beforeID int64, proposalType, status s
 		item := ProposalListItem{
 			ID:          publicProposalID(&p),
 			Type:        p.Type,
-			Title:       p.Title,
+			Title:       formatProposalDisplayTitle(p.Title, p.SIP),
+			SIP:         p.SIP,
 			Status:      p.Status,
 			ProposerSNS: p.ProposerSNS,
 			CreatedAt:   formatTimeUTC(p.CreatedAt),
@@ -575,6 +578,31 @@ func publicProposalID(p *model.Proposal) int64 {
 	return p.ID
 }
 
+func formatProposalDisplayTitle(title string, sip *string) string {
+	label := normalizeSIPLabel(sip)
+	if label == "" {
+		return title
+	}
+	if strings.HasPrefix(strings.TrimSpace(title), label) {
+		return title
+	}
+	return label + " " + title
+}
+
+func normalizeSIPLabel(sip *string) string {
+	if sip == nil {
+		return ""
+	}
+	s := strings.TrimSpace(*sip)
+	if s == "" {
+		return ""
+	}
+	if strings.HasPrefix(strings.ToUpper(s), "SIP") {
+		return s
+	}
+	return "SIP-" + s
+}
+
 func (s *ProposalService) isProposer(p *model.Proposal, sns string) bool {
 	if p.ProposerSNS == nil {
 		return false
@@ -660,7 +688,8 @@ func toProposalResponse(p *model.Proposal) ProposalResponse {
 	resp := ProposalResponse{
 		ID:             publicProposalID(p),
 		Type:           p.Type,
-		Title:          p.Title,
+		Title:          formatProposalDisplayTitle(p.Title, p.SIP),
+		SIP:            p.SIP,
 		Content:        json.RawMessage(p.Content),
 		ProposerSNS:    p.ProposerSNS,
 		ProposerWallet: p.ProposerWallet,

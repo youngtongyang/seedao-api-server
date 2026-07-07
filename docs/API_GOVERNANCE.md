@@ -16,7 +16,13 @@ chmod +x src/scripts/import-proposals.sh
 ./src/scripts/import-proposals.sh "/path/to/proposal_v2_tables.sql"
 ```
 
-脚本会先导入 dump（`proposal_*_v2`），再执行 `007_proposals.sql` 重命名为 `proposal` / `proposal_vote` / `proposal_comment`。
+脚本会先导入 dump（`proposal_*_v2`），再执行 `proposal-post-import.sql` 重命名为 `proposal` / `proposal_vote` / `proposal_comment`，并确保 `sip`、`resolution_rule` 等字段存在。
+
+导入后若 dump 未含 `sip` 列，可单独执行：
+
+```bash
+psql -h "$PGHOST" -U "$PGUSER" -d "$PGDATABASE" -f src/migrations/008_proposal_sip.sql
+```
 
 ## 配置 `governance`（节点白名单，不走链上 SBT）
 

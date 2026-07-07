@@ -23,6 +23,6 @@ PGPASSWORD="${PGPASSWORD:?set PGPASSWORD}" psql -h "$PGHOST" -U "$PGUSER" -d "$P
 
 echo "==> normalize schema (rename *_v2, add indexes)"
 PGPASSWORD="$PGPASSWORD" psql -h "$PGHOST" -U "$PGUSER" -d "$PGDATABASE" \
-  -f "$ROOT/src/migrations/007_proposals.sql"
+  -f "$ROOT/src/scripts/proposal-post-import.sql"
 
 echo "done."
