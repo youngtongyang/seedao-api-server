@@ -40,6 +40,12 @@ func (e *ProposalForbiddenError) Is(target error) bool {
 	return target == ErrProposalForbidden
 }
 
+var creatableProposalTypeAPIKeys = []string{
+	"town_hall_meeting",
+	"node_consensus_special",
+	"node_consensus_rule",
+}
+
 var createProposalTypeAliases = map[string]string{
 	"node_consensus_rule":    "节点共识大会规则提案",
 	"node_consensus_special": "节点共识大会特别提案",

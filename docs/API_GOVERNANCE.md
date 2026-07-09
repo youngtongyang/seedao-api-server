@@ -72,6 +72,7 @@ psql -h "$PGHOST" -U "$PGUSER" -d "$PGDATABASE" -f src/migrations/008_proposal_s
 | 方法 | 路径 | 鉴权 |
 |------|------|------|
 | GET | `/v1/governance/nodes` | 无 |
+| GET | `/v1/governance/proposal-permissions` | JWT |
 | GET | `/v1/proposals` | 无 |
 | GET | `/v1/proposals/:id` | 无 |
 | GET | `/v1/proposals/:id/vote-summary` | 无 |
@@ -94,6 +95,34 @@ psql -h "$PGHOST" -U "$PGUSER" -d "$PGDATABASE" -f src/migrations/008_proposal_s
 | `meta_rule` | 赞成 ≥ 选举人总数 2/3（节点元规则用 `quarter_node_total`；市政厅用 `hall_voter_sns` 人数） |
 
 同一 SNS 对同一提案仅可投一票（应用层 + DB 唯一索引）。
+
+### 创建前权限预检
+
+前端在展示「发起提案」入口前，可调用：
+
+```bash
+curl -s http://127.0.0.1:8080/v1/governance/proposal-permissions \
+  -H "Authorization: Bearer <TOKEN>" | jq .
+```
+
+响应示例：
+
+```json
+{
+  "code": 0,
+  "data": {
+    "sns_name": "baiyu.seedao",
+    "can_create_any": true,
+    "create_types": {
+      "town_hall_meeting": true,
+      "node_consensus_special": true,
+      "node_consensus_rule": true
+    }
+  }
+}
+```
+
+`create_types` 的 key 与 `POST /v1/proposals` 的 `type` 字段一致。账号未绑定 SNS 时返回 `40026`。
 
 ## Swagger
 

@@ -101,6 +101,12 @@ type GovernanceNodesResult struct {
 	NodeVoterSNS             []string `json:"node_voter_sns"`
 }
 
+type ProposalCreatePermissionsResult struct {
+	SNSName      string          `json:"sns_name"`
+	CanCreateAny bool            `json:"can_create_any"`
+	CreateTypes  map[string]bool `json:"create_types"`
+}
+
 type CreateProposalInput struct {
 	Type           string
 	Title          string
@@ -149,6 +155,24 @@ func (s *ProposalService) GovernanceNodes() *GovernanceNodesResult {
 		NodeConsensusProposalSNS: append([]string(nil), s.cfg.NodeConsensusProposalSNS...),
 		HallVoterSNS:             append([]string(nil), s.cfg.HallVoterSNS...),
 		NodeVoterSNS:             append([]string(nil), s.cfg.NodeVoterSNS...),
+	}
+}
+
+func (s *ProposalService) CreatePermissions(snsName string) *ProposalCreatePermissionsResult {
+	createTypes := make(map[string]bool, len(creatableProposalTypeAPIKeys))
+	canCreateAny := false
+	for _, apiType := range creatableProposalTypeAPIKeys {
+		normalized, err := normalizeCreateProposalType(apiType)
+		allowed := err == nil && snsName != "" && s.acl.canCreateType(snsName, normalized)
+		createTypes[apiType] = allowed
+		if allowed {
+			canCreateAny = true
+		}
+	}
+	return &ProposalCreatePermissionsResult{
+		SNSName:      snsName,
+		CanCreateAny: canCreateAny,
+		CreateTypes:  createTypes,
 	}
 }
 
@@ -416,7 +440,7 @@ func (s *ProposalService) UpdateDraft(id int64, input UpdateProposalInput) (*Pro
 		updates["vote_options"] = voteOptions
 	}
 	if len(updates) == 1 {
-		return nil, ErrInvalidParam
+		return nil, &ProposalParamError{Reason: "no updatable fields provided; send title, content, vote_type, or vote_options"}
 	}
 	if err := s.db.Model(p).Updates(updates).Error; err != nil {
 		return nil, err

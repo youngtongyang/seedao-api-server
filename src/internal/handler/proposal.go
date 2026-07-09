@@ -241,7 +241,7 @@ func (h *ProposalHandler) Update(c echo.Context) error {
 	}
 	var req updateProposalRequest
 	if err := c.Bind(&req); err != nil {
-		return response.Fail(c, http.StatusBadRequest, errcode.InvalidParam)
+		return failWithReason(c, http.StatusBadRequest, errcode.InvalidParam, "invalid JSON body")
 	}
 	sns, _, err := h.actorFromContext(c)
 	if err != nil {
@@ -436,6 +436,24 @@ func (h *ProposalHandler) Finalize(c echo.Context) error {
 
 func (h *ProposalHandler) GovernanceNodes(c echo.Context) error {
 	return response.OK(c, h.proposals.GovernanceNodes())
+}
+
+// ProposalCreatePermissions godoc
+// @Summary      查询当前用户可创建的提案类型
+// @Description  根据 governance 白名单返回当前登录 SNS 能否创建各类提案（与 POST /v1/proposals 鉴权一致）
+// @Tags         proposals
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200  {object}  response.Envelope{data=service.ProposalCreatePermissionsResult}
+// @Failure      400  {object}  response.Envelope
+// @Failure      401  {object}  response.Envelope
+// @Router       /v1/governance/proposal-permissions [get]
+func (h *ProposalHandler) ProposalCreatePermissions(c echo.Context) error {
+	sns, _, err := h.actorFromContext(c)
+	if err != nil {
+		return err
+	}
+	return response.OK(c, h.proposals.CreatePermissions(sns))
 }
 
 func (h *ProposalHandler) actorFromContext(c echo.Context) (string, string, error) {

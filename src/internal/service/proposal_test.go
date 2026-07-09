@@ -32,6 +32,27 @@ func newProposalTestDB(t *testing.T) *ProposalService {
 	return NewProposalService(db, NewSNSService(db, nil), testGovernanceCfg())
 }
 
+func TestProposalCreatePermissions(t *testing.T) {
+	svc := newProposalTestDB(t)
+
+	hall := svc.CreatePermissions("hall.seedao")
+	assert.True(t, hall.CanCreateAny)
+	assert.True(t, hall.CreateTypes["town_hall_meeting"])
+	assert.False(t, hall.CreateTypes["node_consensus_special"])
+	assert.False(t, hall.CreateTypes["node_consensus_rule"])
+
+	node := svc.CreatePermissions("node.seedao")
+	assert.True(t, node.CanCreateAny)
+	assert.False(t, node.CreateTypes["town_hall_meeting"])
+	assert.True(t, node.CreateTypes["node_consensus_special"])
+	assert.True(t, node.CreateTypes["node_consensus_rule"])
+
+	none := svc.CreatePermissions("random.seedao")
+	assert.False(t, none.CanCreateAny)
+	assert.False(t, none.CreateTypes["town_hall_meeting"])
+	assert.False(t, none.CreateTypes["node_consensus_special"])
+}
+
 func TestProposalServiceCreateUpdateClose(t *testing.T) {
 	svc := newProposalTestDB(t)
 	content, _ := json.Marshal(map[string]string{"plain_text": "draft"})

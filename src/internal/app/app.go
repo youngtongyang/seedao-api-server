@@ -104,6 +104,7 @@ func NewEcho(cfg *config.Config, db *gorm.DB, redis *redisstore.Store) (*echo.Ec
 	}
 
 	v1.GET("/governance/nodes", proposalHandler.GovernanceNodes)
+	v1.GET("/governance/proposal-permissions", proposalHandler.ProposalCreatePermissions, middleware.JWT(jwtMgr))
 	v1.GET("/proposals", proposalHandler.List)
 	v1.GET("/proposals/:id/vote-summary", proposalHandler.VoteSummary)
 	v1.GET("/proposals/:id/votes/me", proposalHandler.GetMyVote, middleware.JWT(jwtMgr))

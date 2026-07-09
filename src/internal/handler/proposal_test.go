@@ -90,6 +90,50 @@ func TestProposalCreatePublishVoteFlow(t *testing.T) {
 	assert.NotNil(t, detail["comments"])
 }
 
+func TestProposalCreatePermissionsEndpoint(t *testing.T) {
+	ts := testutil.NewTestServer(t)
+
+	hallToken := ts.RegisterAndToken(t, "+8613900200101", "hall.seedao")
+	hallRec := testutil.DoJSON(t, ts.Echo, http.MethodGet, "/v1/governance/proposal-permissions", nil, map[string]string{
+		"Authorization": "Bearer " + hallToken,
+	})
+	hallResp := testutil.ParseResponse(t, hallRec)
+	hallData := testutil.ParseData[map[string]interface{}](t, hallResp.Data)
+	assert.Equal(t, "hall.seedao", hallData["sns_name"])
+	assert.Equal(t, true, hallData["can_create_any"])
+	createTypes := hallData["create_types"].(map[string]interface{})
+	assert.Equal(t, true, createTypes["town_hall_meeting"])
+	assert.Equal(t, false, createTypes["node_consensus_special"])
+
+	randomToken := ts.RegisterAndToken(t, "+8613900200102", "random.seedao")
+	randomRec := testutil.DoJSON(t, ts.Echo, http.MethodGet, "/v1/governance/proposal-permissions", nil, map[string]string{
+		"Authorization": "Bearer " + randomToken,
+	})
+	randomResp := testutil.ParseResponse(t, randomRec)
+	randomData := testutil.ParseData[map[string]interface{}](t, randomResp.Data)
+	assert.Equal(t, false, randomData["can_create_any"])
+}
+
+func TestProposalUpdateDraftEmptyBody(t *testing.T) {
+	ts := testutil.NewTestServer(t)
+	token := ts.RegisterAndToken(t, "+8613900200201", "hall.seedao")
+
+	createRec := testutil.DoJSON(t, ts.Echo, http.MethodPost, "/v1/proposals", map[string]interface{}{
+		"type":    model.ProposalTypeHallRegular,
+		"title":   "draft",
+		"content": map[string]string{"background": "x"},
+	}, map[string]string{"Authorization": "Bearer " + token})
+	created := testutil.ParseData[map[string]interface{}](t, testutil.ParseResponse(t, createRec).Data)
+	id := int64(created["id"].(float64))
+
+	patchRec := testutil.DoJSON(t, ts.Echo, http.MethodPatch, "/v1/proposals/"+pid(id), map[string]interface{}{}, map[string]string{
+		"Authorization": "Bearer " + token,
+	})
+	resp := testutil.ParseErrorResponse(t, patchRec)
+	assert.Equal(t, errcode.InvalidParam, resp.Code)
+	assert.Contains(t, resp.Detail, "no updatable fields provided")
+}
+
 func TestProposalCreateForbidden(t *testing.T) {
 	ts := testutil.NewTestServer(t)
 	token := ts.RegisterAndToken(t, "+8613900200003", "random.seedao")
