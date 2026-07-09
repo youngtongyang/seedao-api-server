@@ -1,5 +1,48 @@
 # 治理 / 提案 API
 
+## 提案类型与计票规则
+
+| 业务名称 | 创建 API `type` | `resolution_rule` | 通过条件 |
+|----------|-----------------|-------------------|----------|
+| 节点大会常规提案 | `node_consensus_special` | `standard`（默认） | 参与 **> 1/2** 节点总数；赞成 **> 1/2** 有效票 |
+| 节点大会元规则提案 | `node_consensus_rule` | `meta_rule` | 赞成 **≥ 2/3** 节点总数 |
+| 市政厅决策提案 | `town_hall_meeting` | `standard`（默认） | 计票公式同上；可投票人见 `hall_voter_sns` |
+
+元规则提案创建示例：
+
+```json
+{
+  "type": "node_consensus_rule",
+  "resolution_rule": "meta_rule",
+  "title": "...",
+  "content": { ... }
+}
+```
+
+---
+
+## 白名单配置（仅 ECS 手动维护）
+
+`governance` 段写在 **`服务器上的生产配置文件（不在本仓库）`**，**勿提交 Git**。
+
+| 配置项 | 作用 |
+|--------|------|
+| `quarter_node_total` | 当季节点总数（计票分母） |
+| `node_consensus_proposal_sns` | 可**发起**节点类提案 |
+| `node_voter_sns` | 可**投**节点类提案 |
+| `hall_proposal_sns` | 可**发起**市政厅提案 |
+| `hall_voter_sns` | 可**投**市政厅提案 |
+
+部署步骤见 [OPERATIONS.md — 治理白名单](OPERATIONS.md#治理白名单仅-ecs-手动配置)。
+
+验证：
+
+```bash
+curl -s https://api.seedao.xyz/v1/governance/nodes | jq .
+```
+
+---
+
 ## 数据表（无 `_v2` 后缀）
 
 | 表名 | 说明 |
@@ -22,19 +65,6 @@ chmod +x src/scripts/import-proposals.sh
 
 ```bash
 psql -h "$PGHOST" -U "$PGUSER" -d "$PGDATABASE" -f src/migrations/008_proposal_sip.sql
-```
-
-## 配置 `governance`（节点白名单，不走链上 SBT）
-
-```yaml
-governance:
-  quarter_node_total: 20
-  hall_proposal_sns: ["baiyu.seedao"]
-  node_consensus_proposal_sns: ["node.seedao"]
-  hall_voter_sns: ["hall_voter.seedao"]
-  node_voter_sns: ["voter1.seedao", "voter2.seedao"]
-  default_publicity_seconds: 432000
-  default_vote_duration_seconds: 172800
 ```
 
 ## 接口一览

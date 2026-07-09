@@ -51,3 +51,5 @@ wechat_pay:
   membership_price_fen: 9900
   order_expire_minutes: 15
   description: "SeeDAO 会员续费"
+
+# governance 白名单仅写在 ECS config.prod.yaml，勿提交 Git（见 docs/OPERATIONS.md）

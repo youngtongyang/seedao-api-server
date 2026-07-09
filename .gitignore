@@ -22,6 +22,7 @@ config.yaml
 src/config/config.local.yaml
 src/config/config.dev.yaml
 src/config/config.prod.yaml
+src/config/governance.whitelist.yaml
 
 # Example templates are tracked
 !src/config/*.example.yaml

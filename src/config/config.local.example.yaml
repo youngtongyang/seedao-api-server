@@ -45,13 +45,13 @@ wechat_pay:
   order_expire_minutes: 15
   description: "SeeDAO 会员续费"
 
+# governance：生产名单仅配在 ECS config.prod.yaml；本地联调可自建 governance 段（勿提交真实名单）
 governance:
-  quarter_node_total: 20
-  # 本地开发：把有 SNS 的账号填进对应白名单，否则创建提案会 403
+  quarter_node_total: 13
   hall_proposal_sns:
-    - young1.seedao
+    - your_sns.seedao
   node_consensus_proposal_sns:
-    - young1.seedao
+    - your_sns.seedao
   hall_voter_sns: []
   node_voter_sns: []
   default_publicity_seconds: 432000
