@@ -138,6 +138,24 @@ func TestSNSCheck_TakenInRegistry(t *testing.T) {
 	assert.Equal(t, "taken_in_registry", data["reason"])
 }
 
+func TestSNSLookupByWallet(t *testing.T) {
+	ts := testutil.NewTestServer(t)
+	wallet := "0x1b76b011c0a1e03896bfc8923be228e430bb9049"
+	ts.SeedRegistry(t, wallet, "nechi_luo.seedao")
+
+	rec := testutil.DoJSON(t, ts.Echo, http.MethodGet, "/v1/sns/by-wallet?wallet="+wallet, nil, nil)
+	resp := testutil.ParseResponse(t, rec)
+	data := testutil.ParseData[map[string]interface{}](t, resp.Data)
+	assert.Equal(t, wallet, data["wallet"])
+	assert.Equal(t, "nechi_luo.seedao", data["sns_name"])
+
+	rec2 := testutil.DoJSON(t, ts.Echo, http.MethodGet, "/v1/sns/by-wallet?wallet=0x0000000000000000000000000000000000000001", nil, nil)
+	require.Equal(t, http.StatusOK, rec2.Code)
+	resp2 := testutil.ParseResponse(t, rec2)
+	data2 := testutil.ParseData[map[string]interface{}](t, resp2.Data)
+	assert.Equal(t, "0x0000...0001", data2["sns_name"])
+}
+
 func TestRegisterNewSNS(t *testing.T) {
 	ts := testutil.NewTestServer(t)
 	phoneNum := "+8613900139000"

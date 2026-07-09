@@ -37,3 +37,22 @@ func (h *SNSHandler) Check(c echo.Context) error {
 	}
 	return response.OK(c, result)
 }
+
+// LookupByWallet godoc
+// @Summary      根据钱包地址查询 SNS 名称
+// @Tags         sns
+// @Produce      json
+// @Param        wallet  query  string  true  "钱包地址"
+// @Success      200  {object}  response.Envelope{data=service.WalletSNSLookupResult}
+// @Router       /v1/sns/by-wallet [get]
+func (h *SNSHandler) LookupByWallet(c echo.Context) error {
+	wallet := c.QueryParam("wallet")
+	if wallet == "" {
+		return response.Fail(c, http.StatusBadRequest, errcode.InvalidParam)
+	}
+	result, err := h.sns.LookupWallet(c.Request().Context(), wallet)
+	if err != nil {
+		return mapServiceError(c, err)
+	}
+	return response.OK(c, result)
+}

@@ -47,8 +47,11 @@ wechat_pay:
 
 governance:
   quarter_node_total: 20
-  hall_proposal_sns: []
-  node_consensus_proposal_sns: []
+  # 本地开发：把有 SNS 的账号填进对应白名单，否则创建提案会 403
+  hall_proposal_sns:
+    - young1.seedao
+  node_consensus_proposal_sns:
+    - young1.seedao
   hall_voter_sns: []
   node_voter_sns: []
   default_publicity_seconds: 432000

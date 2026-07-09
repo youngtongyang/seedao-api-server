@@ -2,7 +2,6 @@ package service
 
 import (
 	"encoding/json"
-	"slices"
 	"strings"
 	"time"
 
@@ -33,10 +32,10 @@ func (g governanceACL) inList(name string, list []string) bool {
 }
 
 func (g governanceACL) canCreateType(snsName, proposalType string) bool {
-	switch proposalType {
-	case model.ProposalTypeHallRegular:
+	switch proposalTypeFamily(proposalType) {
+	case "hall":
 		return g.inList(snsName, g.cfg.HallProposalSNS)
-	case model.ProposalTypeNodeConsensus:
+	case "node":
 		return g.inList(snsName, g.cfg.NodeConsensusProposalSNS)
 	default:
 		return false
@@ -134,7 +133,7 @@ func isEditableStatus(status string) bool {
 }
 
 func isHallOrNodeCreateType(t string) bool {
-	return slices.Contains([]string{model.ProposalTypeHallRegular, model.ProposalTypeNodeConsensus}, t)
+	return isCreatableProposalType(t)
 }
 
 func formatTimeUTC(t time.Time) string {

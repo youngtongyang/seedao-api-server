@@ -15,6 +15,10 @@ import (
 func mapServiceError(c echo.Context, err error) error {
 	switch {
 	case errors.Is(err, service.ErrInvalidParam):
+		var paramErr *service.ProposalParamError
+		if errors.As(err, &paramErr) && paramErr.Reason != "" {
+			return failWithReason(c, http.StatusBadRequest, errcode.InvalidParam, paramErr.Reason)
+		}
 		return failWithReason(c, http.StatusBadRequest, errcode.InvalidParam, service.ReasonInvalidRequestBody)
 	case errors.Is(err, service.ErrWalletDomainRequired):
 		return failWithReason(c, http.StatusBadRequest, errcode.InvalidParam, service.ReasonDomainRequired)
@@ -86,6 +90,10 @@ func mapServiceError(c echo.Context, err error) error {
 	case errors.Is(err, service.ErrProposalNotFound):
 		return response.Fail(c, http.StatusBadRequest, errcode.ProposalNotFound)
 	case errors.Is(err, service.ErrProposalForbidden):
+		var forbidden *service.ProposalForbiddenError
+		if errors.As(err, &forbidden) && forbidden.Reason != "" {
+			return failWithReason(c, http.StatusForbidden, errcode.ProposalForbidden, forbidden.Reason)
+		}
 		return response.Fail(c, http.StatusForbidden, errcode.ProposalForbidden)
 	case errors.Is(err, service.ErrProposalInvalidStatus):
 		return response.Fail(c, http.StatusBadRequest, errcode.ProposalInvalidStatus)
@@ -99,6 +107,8 @@ func mapServiceError(c echo.Context, err error) error {
 		return response.Fail(c, http.StatusBadRequest, errcode.ProposalSNSRequired)
 	case errors.Is(err, service.ErrProposalVoteNotFound):
 		return response.Fail(c, http.StatusBadRequest, errcode.ProposalVoteNotFound)
+	case errors.Is(err, service.ErrProposalAssociateSIPMissing):
+		return failWithReason(c, http.StatusBadRequest, errcode.ProposalInvalidStatus, "associate proposal has no SIP assigned")
 	default:
 		c.Logger().Error(err)
 		if middleware.IsDebug(c) {

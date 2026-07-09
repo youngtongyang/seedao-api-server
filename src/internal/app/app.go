@@ -53,7 +53,7 @@ func NewEcho(cfg *config.Config, db *gorm.DB, redis *redisstore.Store) (*echo.Ec
 	couponSvc := service.NewCouponService(db)
 	courseSvc := service.NewCourseService(db, wxClient, cfg.WechatPay)
 	paymentSvc := service.NewPaymentService(db, redis, wxClient, cfg.WechatPay, couponSvc, courseSvc)
-	proposalSvc := service.NewProposalService(db, cfg.Governance)
+	proposalSvc := service.NewProposalService(db, snsSvc, cfg.Governance)
 
 	authHandler := handler.NewAuthHandler(authSvc, smsSvc)
 	snsHandler := handler.NewSNSHandler(snsSvc)
@@ -81,6 +81,7 @@ func NewEcho(cfg *config.Config, db *gorm.DB, redis *redisstore.Store) (*echo.Ec
 	v1.POST("/auth/login", authHandler.Login)
 	v1.POST("/auth/register", authHandler.Register)
 	v1.GET("/sns/check", snsHandler.Check)
+	v1.GET("/sns/by-wallet", snsHandler.LookupByWallet)
 	v1.POST("/wallet/nonce", walletHandler.Nonce)
 	v1.POST("/wallet/verify-sns", walletHandler.VerifySNS)
 	v1.GET("/stats/user-count", statsHandler.UserCount)

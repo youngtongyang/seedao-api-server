@@ -21,13 +21,15 @@ const (
 	ProposalResolutionMetaRule = "meta_rule"
 
 	ProposalVoteTypeStandard = 1
+	ProposalVoteTypeMulti    = 2
 )
 
 type Proposal struct {
 	ID                  int64      `gorm:"primaryKey"`
 	LegacyID            *int64     `gorm:"column:legacy_id"`
 	LegacyRecordID      *string    `gorm:"column:legacy_record_id;size:128"`
-	SIP                 *string    `gorm:"column:sip;size:64"`
+	SIP                 int        `gorm:"column:sip;not null;default:0"`
+	AssociateProposalID *int64     `gorm:"column:associate_proposal_id"`
 	Type                string     `gorm:"size:128;not null"`
 	Title               string     `gorm:"size:512;not null"`
 	Content             []byte     `gorm:"type:jsonb;not null"`

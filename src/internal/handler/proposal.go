@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/labstack/echo/v4"
 
@@ -27,7 +28,7 @@ func NewProposalHandler(proposals *service.ProposalService, profile *service.Pro
 // @Tags         proposals
 // @Produce      json
 // @Param        limit     query  int     false  "每页条数，默认 20，最大 50"
-// @Param        before_id query  int     false  "游标：传入上一页最后一条的 id（legacy_id 优先），返回更早创建的记录"
+// @Param        before_id query  int     false  "游标：传入上一页最后一条的 id，返回更早创建的记录"
 // @Param        type      query  string  false  "提案类型"
 // @Param        status    query  string  false  "提案状态"
 // @Success      200  {object}  response.Envelope{data=service.ProposalListResult}
@@ -57,7 +58,7 @@ func (h *ProposalHandler) List(c echo.Context) error {
 // @Summary      获取提案详情
 // @Tags         proposals
 // @Produce      json
-// @Param        id                path   int     true   "提案 ID（导入数据为 legacy_id）"
+// @Param        id                path   int     true   "提案 ID（兼容 legacy_id 查询）"
 // @Param        include_votes     query  bool    false  "是否包含投票列表"
 // @Param        include_comments  query  bool    false  "是否包含评论列表"
 // @Success      200  {object}  response.Envelope{data=service.ProposalDetail}
@@ -117,7 +118,7 @@ func (h *ProposalHandler) ListVotes(c echo.Context) error {
 	if err != nil {
 		return mapServiceError(c, err)
 	}
-	return response.OK(c, map[string]interface{}{"items": result})
+	return response.OK(c, result)
 }
 
 // GetMyVote godoc
@@ -162,7 +163,7 @@ func (h *ProposalHandler) ListComments(c echo.Context) error {
 	if err != nil {
 		return mapServiceError(c, err)
 	}
-	return response.OK(c, map[string]interface{}{"items": result})
+	return response.OK(c, result)
 }
 
 type createProposalRequest struct {
@@ -170,6 +171,8 @@ type createProposalRequest struct {
 	Title          string          `json:"title"`
 	Content        json.RawMessage `json:"content"`
 	ResolutionRule string          `json:"resolution_rule"`
+	VoteType       int16           `json:"vote_type"`
+	VoteOptions    json.RawMessage `json:"vote_options"`
 }
 
 // Create godoc
@@ -184,8 +187,14 @@ type createProposalRequest struct {
 // @Router       /v1/proposals [post]
 func (h *ProposalHandler) Create(c echo.Context) error {
 	var req createProposalRequest
-	if err := c.Bind(&req); err != nil || req.Title == "" || len(req.Content) == 0 {
-		return response.Fail(c, http.StatusBadRequest, errcode.InvalidParam)
+	if err := c.Bind(&req); err != nil {
+		return failWithReason(c, http.StatusBadRequest, errcode.InvalidParam, "invalid JSON body")
+	}
+	if strings.TrimSpace(req.Title) == "" {
+		return failWithReason(c, http.StatusBadRequest, errcode.InvalidParam, "proposal title is required")
+	}
+	if len(req.Content) == 0 {
+		return failWithReason(c, http.StatusBadRequest, errcode.InvalidParam, "proposal content is required")
 	}
 	sns, wallet, err := h.actorFromContext(c)
 	if err != nil {
@@ -197,6 +206,8 @@ func (h *ProposalHandler) Create(c echo.Context) error {
 		Title:          req.Title,
 		Content:        req.Content,
 		ResolutionRule: req.ResolutionRule,
+		VoteType:       req.VoteType,
+		VoteOptions:    req.VoteOptions,
 		ActorSNS:       sns,
 		ActorWallet:    wallet,
 	})
@@ -207,8 +218,10 @@ func (h *ProposalHandler) Create(c echo.Context) error {
 }
 
 type updateProposalRequest struct {
-	Title   *string         `json:"title"`
-	Content json.RawMessage `json:"content"`
+	Title       *string         `json:"title"`
+	Content     json.RawMessage `json:"content"`
+	VoteType    *int16          `json:"vote_type"`
+	VoteOptions json.RawMessage `json:"vote_options"`
 }
 
 // Update godoc
@@ -236,9 +249,11 @@ func (h *ProposalHandler) Update(c echo.Context) error {
 	}
 
 	result, err := h.proposals.UpdateDraft(id, service.UpdateProposalInput{
-		Title:    req.Title,
-		Content:  req.Content,
-		ActorSNS: sns,
+		Title:       req.Title,
+		Content:     req.Content,
+		VoteType:    req.VoteType,
+		VoteOptions: req.VoteOptions,
+		ActorSNS:    sns,
 	})
 	if err != nil {
 		return mapServiceError(c, err)

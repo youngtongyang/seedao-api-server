@@ -30,6 +30,11 @@ type SNSCheckResult struct {
 	Reason    string `json:"reason,omitempty"`
 }
 
+type WalletSNSLookupResult struct {
+	Wallet  string `json:"wallet"`
+	SNSName string `json:"sns_name"`
+}
+
 func (s *SNSService) Check(ctx context.Context, snsName string) (*SNSCheckResult, error) {
 	normalized := snsutil.Normalize(snsName)
 	if err := snsutil.ValidateFormat(snsName); err != nil {
@@ -94,4 +99,19 @@ func (s *SNSService) IsAvailable(name string) (bool, error) {
 		return false, err
 	}
 	return result.Available, nil
+}
+
+func (s *SNSService) LookupWallet(ctx context.Context, wallet string) (*WalletSNSLookupResult, error) {
+	_ = ctx
+	if IsZeroWallet(wallet) {
+		return nil, ErrInvalidParam
+	}
+	name, err := s.LookupSNSByWallet(wallet)
+	if err != nil {
+		return nil, err
+	}
+	return &WalletSNSLookupResult{
+		Wallet:  NormalizeWallet(wallet),
+		SNSName: name,
+	}, nil
 }
