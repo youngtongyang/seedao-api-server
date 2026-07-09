@@ -6,6 +6,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/seedao/seedao-api-server/internal/model"
 )
 
 func TestNormalizeCreateProposalType(t *testing.T) {
@@ -30,7 +32,7 @@ func TestNormalizeResolutionRule(t *testing.T) {
 
 	got, err = normalizeResolutionRule("town_hall_standard")
 	require.NoError(t, err)
-	assert.Equal(t, "standard", got)
+	assert.Equal(t, "meta_rule", got)
 
 	_, err = normalizeResolutionRule("bad_rule")
 	require.Error(t, err)
@@ -125,6 +127,24 @@ func TestResolveVoteTypeFromContent(t *testing.T) {
 	assert.Equal(t, int16(2), resolveVoteType(0, content))
 	assert.Equal(t, int16(2), resolveVoteType(2, content))
 	assert.Equal(t, int16(1), resolveVoteType(1, content))
+}
+
+func TestDefaultResolutionRule(t *testing.T) {
+	assert.Equal(t, model.ProposalResolutionMetaRule, defaultResolutionRule(model.ProposalTypeHallRegular))
+	assert.Equal(t, model.ProposalResolutionMetaRule, defaultResolutionRule("节点共识大会规则提案"))
+	assert.Equal(t, model.ProposalResolutionStandard, defaultResolutionRule("节点共识大会特别提案"))
+}
+
+func TestCreateDraftTownHallDefaultsMetaRule(t *testing.T) {
+	svc := newProposalTestDB(t)
+	created, err := svc.CreateDraft(CreateProposalInput{
+		Type:     "town_hall_meeting",
+		Title:    "hall proposal",
+		Content:  []byte(`{"background":"x"}`),
+		ActorSNS: "hall.seedao",
+	})
+	require.NoError(t, err)
+	assert.Equal(t, model.ProposalResolutionMetaRule, created.ResolutionRule)
 }
 
 func TestCreateDraftMultiVoteFromContent(t *testing.T) {

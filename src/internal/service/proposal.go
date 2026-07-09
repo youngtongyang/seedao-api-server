@@ -326,7 +326,11 @@ func (s *ProposalService) CreateDraft(input CreateProposalInput) (*ProposalRespo
 		return nil, &ProposalParamError{Reason: "proposal title is required"}
 	}
 
-	rule, err := normalizeResolutionRule(input.ResolutionRule)
+	ruleRaw := strings.TrimSpace(input.ResolutionRule)
+	if ruleRaw == "" {
+		ruleRaw = defaultResolutionRule(proposalType)
+	}
+	rule, err := normalizeResolutionRule(ruleRaw)
 	if err != nil {
 		return nil, err
 	}
@@ -707,7 +711,17 @@ func (s *ProposalService) tallyVotes(p *model.Proposal) (VoteTally, error) {
 			tally.AbstainCount++
 		}
 	}
-	return evaluateResolution(p.ResolutionRule, s.cfg.QuarterNodeTotal, tally), nil
+	return evaluateResolution(p.ResolutionRule, s.electorateTotal(p), tally), nil
+}
+
+func (s *ProposalService) electorateTotal(p *model.Proposal) int {
+	switch p.Type {
+	case model.ProposalTypeHallRegular:
+		if n := len(s.cfg.HallVoterSNS); n > 0 {
+			return n
+		}
+	}
+	return s.cfg.QuarterNodeTotal
 }
 
 func (s *ProposalService) listVotes(proposalID int64, limit int) ([]ProposalVoteItem, error) {

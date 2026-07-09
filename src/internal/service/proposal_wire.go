@@ -62,7 +62,7 @@ var resolutionRuleAliases = map[string]string{
 	"":                              model.ProposalResolutionStandard,
 	model.ProposalResolutionStandard: model.ProposalResolutionStandard,
 	model.ProposalResolutionMetaRule: model.ProposalResolutionMetaRule,
-	"town_hall_standard":            model.ProposalResolutionStandard,
+	"town_hall_standard":            model.ProposalResolutionMetaRule,
 	"node_consensus_special":        model.ProposalResolutionStandard,
 	"p1_standard":                   model.ProposalResolutionStandard,
 	"p2_standard":                   model.ProposalResolutionStandard,
@@ -83,6 +83,15 @@ func normalizeCreateProposalType(raw string) (string, error) {
 		}
 	}
 	return t, nil
+}
+
+func defaultResolutionRule(proposalType string) string {
+	switch proposalType {
+	case model.ProposalTypeHallRegular, "节点共识大会规则提案":
+		return model.ProposalResolutionMetaRule
+	default:
+		return model.ProposalResolutionStandard
+	}
 }
 
 func normalizeResolutionRule(raw string) (string, error) {

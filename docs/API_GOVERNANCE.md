@@ -6,7 +6,7 @@
 |----------|-----------------|-------------------|----------|
 | 节点大会常规提案 | `node_consensus_special` | `standard`（默认） | 参与 **> 1/2** 节点总数；赞成 **> 1/2** 有效票 |
 | 节点大会元规则提案 | `node_consensus_rule` | `meta_rule` | 赞成 **≥ 2/3** 节点总数 |
-| 市政厅决策提案 | `town_hall_meeting` | `standard`（默认） | 计票公式同上；可投票人见 `hall_voter_sns` |
+| 市政厅决策提案 | `town_hall_meeting` | `meta_rule`（默认） | 赞成 **≥ 2/3** 市政厅成员（`hall_voter_sns` 人数，当前 4 人即至少 **3** 票赞成） |
 
 元规则提案创建示例：
 
@@ -91,7 +91,7 @@ psql -h "$PGHOST" -U "$PGUSER" -d "$PGDATABASE" -f src/migrations/008_proposal_s
 | `resolution_rule` | 通过条件 |
 |-------------------|----------|
 | `standard` | 参与节点 > 当季节点总数 1/2；赞成 > 有效票 1/2 |
-| `meta_rule` | 赞成 ≥ 当季节点总数 2/3 |
+| `meta_rule` | 赞成 ≥ 选举人总数 2/3（节点元规则用 `quarter_node_total`；市政厅用 `hall_voter_sns` 人数） |
 
 同一 SNS 对同一提案仅可投一票（应用层 + DB 唯一索引）。
 

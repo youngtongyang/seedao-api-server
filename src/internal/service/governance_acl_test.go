@@ -43,6 +43,23 @@ func TestEvaluateResolutionMetaRuleFails(t *testing.T) {
 	assert.False(t, out.Passed)
 }
 
+func TestEvaluateResolutionMetaRuleHallFourMembers(t *testing.T) {
+	tally := VoteTally{TotalVotes: 4, ApproveCount: 3, ByResult: map[string]int{}}
+	out := evaluateResolution(model.ProposalResolutionMetaRule, 4, tally)
+	assert.True(t, out.Resolved)
+	assert.True(t, out.Passed)
+
+	tally.ApproveCount = 2
+	out = evaluateResolution(model.ProposalResolutionMetaRule, 4, tally)
+	assert.False(t, out.Passed)
+}
+
+func TestTwoThirdsRequired(t *testing.T) {
+	assert.Equal(t, 9, twoThirdsRequired(13))
+	assert.Equal(t, 3, twoThirdsRequired(4))
+	assert.Equal(t, 14, twoThirdsRequired(20))
+}
+
 func TestGovernanceACLCanCreate(t *testing.T) {
 	acl := newGovernanceACL(configWithGovernance())
 	assert.True(t, acl.canCreateType("baiyu.seedao", model.ProposalTypeHallRegular))

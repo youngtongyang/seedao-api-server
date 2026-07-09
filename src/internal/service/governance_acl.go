@@ -79,15 +79,15 @@ type VoteTally struct {
 	ResolutionReason string         `json:"resolution_reason,omitempty"`
 }
 
-func evaluateResolution(rule string, quarterNodeTotal int, tally VoteTally) VoteTally {
+func evaluateResolution(rule string, electorateTotal int, tally VoteTally) VoteTally {
 	tally.ResolutionRule = rule
-	if quarterNodeTotal <= 0 {
+	if electorateTotal <= 0 {
 		tally.Resolved = false
-		tally.ResolutionReason = "quarter_node_total not configured"
+		tally.ResolutionReason = "voting electorate not configured"
 		return tally
 	}
 
-	tally.Participation = float64(tally.TotalVotes) / float64(quarterNodeTotal)
+	tally.Participation = float64(tally.TotalVotes) / float64(electorateTotal)
 	tally.ValidVotes = tally.ApproveCount + tally.RejectCount
 	if tally.ValidVotes > 0 {
 		tally.ApproveRate = float64(tally.ApproveCount) / float64(tally.ValidVotes)
@@ -95,26 +95,30 @@ func evaluateResolution(rule string, quarterNodeTotal int, tally VoteTally) Vote
 
 	switch rule {
 	case model.ProposalResolutionMetaRule:
-		// 元规则修订：当季节点总数 2/3 以上赞成（第五章）
-		required := (quarterNodeTotal*2 + 2) / 3
+		// 元规则 / 市政厅：选举人总数 2/3 以上赞成
+		required := twoThirdsRequired(electorateTotal)
 		tally.Resolved = true
 		tally.Passed = tally.ApproveCount >= required
 		if !tally.Passed {
-			tally.ResolutionReason = "meta_rule requires two-thirds of all quarter nodes to approve"
+			tally.ResolutionReason = "meta_rule requires two-thirds of electorate to approve"
 		}
 	default:
-		// 节点共识常规：参与节点 > 1/2 总数，且赞成 > 有效票 1/2（第三章 3.2.4）
-		participationOK := tally.TotalVotes > quarterNodeTotal/2
+		// 节点共识常规：参与 > 1/2 选举人总数，且赞成 > 有效票 1/2（第三章 3.2.4）
+		participationOK := tally.TotalVotes > electorateTotal/2
 		approveOK := tally.ValidVotes > 0 && tally.ApproveCount > tally.ValidVotes/2
 		tally.Resolved = true
 		tally.Passed = participationOK && approveOK
 		if !participationOK {
-			tally.ResolutionReason = "participation must exceed half of quarter nodes"
+			tally.ResolutionReason = "participation must exceed half of electorate"
 		} else if !approveOK {
 			tally.ResolutionReason = "approve votes must exceed half of valid votes (excluding abstain)"
 		}
 	}
 	return tally
+}
+
+func twoThirdsRequired(total int) int {
+	return (total*2 + 2) / 3
 }
 
 func classifyVoteResult(result string) string {
