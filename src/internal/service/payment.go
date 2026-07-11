@@ -14,6 +14,7 @@ import (
 
 	"github.com/seedao/seedao-api-server/internal/config"
 	"github.com/seedao/seedao-api-server/internal/model"
+	"github.com/seedao/seedao-api-server/internal/pkg/alipay"
 	"github.com/seedao/seedao-api-server/internal/pkg/redisstore"
 	"github.com/seedao/seedao-api-server/internal/pkg/wechatpay"
 )
@@ -30,22 +31,26 @@ var (
 )
 
 type PaymentService struct {
-	db     *gorm.DB
-	redis  *redisstore.Store
-	wechat wechatpay.Client
-	cfg    config.WechatPayConfig
-	coupon *CouponService
-	course *CourseService
+	db      *gorm.DB
+	redis   *redisstore.Store
+	wechat  wechatpay.Client
+	alipay  alipay.Client
+	cfg     config.WechatPayConfig
+	devMode bool
+	coupon  *CouponService
+	course  *CourseService
 }
 
-func NewPaymentService(db *gorm.DB, redis *redisstore.Store, wechat wechatpay.Client, cfg config.WechatPayConfig, coupon *CouponService, course *CourseService) *PaymentService {
+func NewPaymentService(db *gorm.DB, redis *redisstore.Store, wechat wechatpay.Client, alipayClient alipay.Client, cfg config.WechatPayConfig, devMode bool, coupon *CouponService, course *CourseService) *PaymentService {
 	return &PaymentService{
-		db:     db,
-		redis:  redis,
-		wechat: wechat,
-		cfg:    cfg,
-		coupon: coupon,
-		course: course,
+		db:      db,
+		redis:   redis,
+		wechat:  wechat,
+		alipay:  alipayClient,
+		cfg:     cfg,
+		devMode: devMode,
+		coupon:  coupon,
+		course:  course,
 	}
 }
 
@@ -70,6 +75,7 @@ type PaymentOrderView struct {
 	Status              string `json:"status"`
 	CodeURL             string `json:"code_url,omitempty"`
 	H5URL               string `json:"h5_url,omitempty"`
+	PayURL              string `json:"pay_url,omitempty"`
 	ExpiredAt           string `json:"expired_at"`
 	PaidAt              string `json:"paid_at,omitempty"`
 	MembershipExpiresAt string `json:"membership_expires_at,omitempty"`
@@ -115,7 +121,7 @@ func (s *PaymentService) CreateOrder(ctx context.Context, userID int64, input Cr
 	if payChannel == "" {
 		payChannel = model.PayChannelWechatNative
 	}
-	if payChannel != model.PayChannelWechatNative && payChannel != model.PayChannelWechatH5 {
+	if !model.ValidPayChannel(payChannel) {
 		return nil, ErrPaymentChannelInvalid
 	}
 
@@ -171,6 +177,17 @@ func (s *PaymentService) CreateOrder(ctx context.Context, userID int64, input Cr
 			return nil, err
 		}
 		payURL = h5Result.H5URL
+	case model.PayChannelAlipayH5:
+		wapResult, err := s.alipay.CreateWapOrder(ctx, alipay.WapOrderInput{
+			OrderNo:   orderNo,
+			Subject:   s.cfg.Description,
+			AmountFen: finalAmountFen,
+			ExpireAt:  expiredAt,
+		})
+		if err != nil {
+			return nil, err
+		}
+		payURL = wapResult.PayURL
 	}
 
 	order := model.PaymentOrder{
@@ -209,7 +226,7 @@ func (s *PaymentService) CreateOrder(ctx context.Context, userID int64, input Cr
 		return err
 	})
 	if err != nil {
-		_ = s.wechat.CloseOrder(ctx, orderNo)
+		_ = s.closeProviderOrder(ctx, payChannel, orderNo)
 		return nil, err
 	}
 
@@ -278,7 +295,7 @@ func (s *PaymentService) CloseOrder(ctx context.Context, userID int64, orderNo s
 		return nil, ErrPaymentOrderNotPending
 	}
 
-	if err := s.wechat.CloseOrder(ctx, orderNo); err != nil {
+	if err := s.closeProviderOrder(ctx, order.PayChannel, orderNo); err != nil {
 		return nil, err
 	}
 
@@ -306,8 +323,25 @@ func (s *PaymentService) HandleWechatNotify(ctx context.Context, req *http.Reque
 	return s.CompleteOrderPayment(ctx, notifyResult.OutTradeNo, notifyResult.TransactionID, notifyResult.AmountFen, notifyResult.RawJSON, notifyResult.SuccessTime)
 }
 
+func (s *PaymentService) HandleAlipayNotify(ctx context.Context, req *http.Request) error {
+	notifyResult, err := s.alipay.ParseNotify(req)
+	if err != nil {
+		return err
+	}
+	return s.CompleteOrderPayment(ctx, notifyResult.OutTradeNo, notifyResult.TransactionID, notifyResult.AmountFen, notifyResult.RawJSON, notifyResult.SuccessTime)
+}
+
+func (s *PaymentService) closeProviderOrder(ctx context.Context, payChannel, orderNo string) error {
+	switch payChannel {
+	case model.PayChannelAlipayH5:
+		return s.alipay.CloseOrder(ctx, orderNo)
+	default:
+		return s.wechat.CloseOrder(ctx, orderNo)
+	}
+}
+
 func (s *PaymentService) SimulatePayDev(ctx context.Context, userID int64, orderNo string) (*PaymentOrderView, error) {
-	if !s.cfg.DevMode {
+	if !s.devMode {
 		return nil, ErrInvalidParam
 	}
 
@@ -455,6 +489,8 @@ func toPaymentOrderView(order *model.PaymentOrder, membershipExpiresAt string) *
 		switch order.PayChannel {
 		case model.PayChannelWechatH5:
 			view.H5URL = *order.CodeURL
+		case model.PayChannelAlipayH5:
+			view.PayURL = *order.CodeURL
 		default:
 			view.CodeURL = *order.CodeURL
 		}

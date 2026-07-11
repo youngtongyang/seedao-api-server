@@ -66,6 +66,10 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/relvacode/iso8601 v1.1.1-0.20210511065120-b30b151cc433 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
+	github.com/smartwalle/alipay/v3 v3.2.30 // indirect
+	github.com/smartwalle/ncrypto v1.0.4 // indirect
+	github.com/smartwalle/ngx v1.1.1 // indirect
+	github.com/smartwalle/nsign v1.0.9 // indirect
 	github.com/sv-tools/openapi v0.2.1 // indirect
 	github.com/swaggo/files/v2 v2.0.0 // indirect
 	github.com/swaggo/swag/v2 v2.0.0-rc4 // indirect

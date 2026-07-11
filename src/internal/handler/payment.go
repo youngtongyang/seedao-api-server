@@ -169,6 +169,21 @@ func (h *PaymentHandler) CloseOrder(c echo.Context) error {
 	return response.OK(c, result)
 }
 
+// AlipayNotify godoc
+// @Summary      支付宝支付回调（支付宝服务器调用）
+// @Tags         payments
+// @Accept       x-www-form-urlencoded
+// @Produce      plain
+// @Success      200  {string}  string  "success"
+// @Router       /v1/payments/alipay/notify [post]
+func (h *PaymentHandler) AlipayNotify(c echo.Context) error {
+	if err := h.payment.HandleAlipayNotify(c.Request().Context(), c.Request()); err != nil {
+		c.Logger().Error(err)
+		return c.String(http.StatusBadRequest, "fail")
+	}
+	return c.String(http.StatusOK, "success")
+}
+
 // WechatNotify godoc
 // @Summary      微信支付回调（微信服务器调用）
 // @Tags         payments

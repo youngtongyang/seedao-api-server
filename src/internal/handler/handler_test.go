@@ -496,6 +496,27 @@ func TestPaymentCreateOrderH5(t *testing.T) {
 	assert.Empty(t, data["code_url"])
 }
 
+func TestPaymentCreateOrderAlipayH5(t *testing.T) {
+	ts := testutil.NewTestServer(t)
+	token := registerAndGetToken(t, ts, "+8613900139021", "pay_alipay.seedao")
+
+	rec := testutil.DoJSON(t, ts.Echo, http.MethodPost, "/v1/payments/orders", map[string]interface{}{
+		"product_type": "membership_renew",
+		"pay_channel":  "alipay_h5",
+	}, map[string]string{
+		"Authorization": "Bearer " + token,
+	})
+	resp := testutil.ParseResponse(t, rec)
+
+	data := testutil.ParseData[map[string]interface{}](t, resp.Data)
+	assert.NotEmpty(t, data["order_no"])
+	assert.Equal(t, "alipay_h5", data["pay_channel"])
+	assert.Equal(t, "pending", data["status"])
+	assert.NotEmpty(t, data["pay_url"])
+	assert.Empty(t, data["h5_url"])
+	assert.Empty(t, data["code_url"])
+}
+
 func TestPaymentCreateOrderInvalidChannel(t *testing.T) {
 	ts := testutil.NewTestServer(t)
 	token := registerAndGetToken(t, ts, "+8613900139019", "pay_bad.seedao")

@@ -534,8 +534,8 @@ curl http://127.0.0.1:8080/v1/payments/orders/<ORDER_NO> \
 ```yaml
 wechat_pay:
   h5_wap_name: "SeeDAO"
-  h5_wap_url: "https://app.seedao.top"          # 须与微信商户平台 H5 支付域名一致
-  h5_return_url: "https://app.seedao.top/pay/result"  # 付完跳回的 PWA 页面
+  h5_wap_url: "https://seedao.xyz"          # 须与微信商户平台 H5 支付域名一致
+  h5_return_url: "https://seedao.xyz/pay/result"  # 付完跳回的前端结果页
 ```
 
 商户平台还需：**开通 H5 支付** + **配置 H5 支付域名**（需 ICP 备案）。

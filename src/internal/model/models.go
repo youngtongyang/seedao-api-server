@@ -23,6 +23,7 @@ const (
 
 	PayChannelWechatNative = "wechat_native"
 	PayChannelWechatH5     = "wechat_h5"
+	PayChannelAlipayH5     = "alipay_h5"
 
 	PaymentOrderStatusPending = "pending"
 	PaymentOrderStatusPaid    = "paid"
@@ -53,6 +54,15 @@ const (
 
 	MinPaymentAmountFen = 1
 )
+
+func ValidPayChannel(payChannel string) bool {
+	switch payChannel {
+	case PayChannelWechatNative, PayChannelWechatH5, PayChannelAlipayH5:
+		return true
+	default:
+		return false
+	}
+}
 
 type User struct {
 	ID                  int64          `gorm:"primaryKey"`

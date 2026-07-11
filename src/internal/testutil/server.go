@@ -61,11 +61,15 @@ func NewTestServer(t *testing.T) *TestServer {
 		WechatPay: config.WechatPayConfig{
 			DevMode:            true,
 			H5WapName:          "SeeDAO",
-			H5WapURL:           "https://app.seedao.top",
-			H5ReturnURL:        "https://app.seedao.top/pay/result",
+			H5WapURL:           "https://seedao.xyz",
+			H5ReturnURL:        "https://seedao.xyz/pay/result",
 			MembershipPriceFen: 9900,
 			OrderExpireMinutes: 15,
 			Description:        "SeeDAO 会员续费",
+		},
+		Alipay: config.AlipayConfig{
+			DevMode:    true,
+			ReturnURL:  "https://seedao.xyz/pay/result",
 		},
 		Governance: config.GovernanceConfig{
 			QuarterNodeTotal:           4,

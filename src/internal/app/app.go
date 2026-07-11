@@ -11,6 +11,7 @@ import (
 	"github.com/seedao/seedao-api-server/internal/handler"
 	"github.com/seedao/seedao-api-server/internal/middleware"
 	"github.com/seedao/seedao-api-server/internal/pkg/aliyunsms"
+	"github.com/seedao/seedao-api-server/internal/pkg/alipay"
 	"github.com/seedao/seedao-api-server/internal/pkg/jwtutil"
 	"github.com/seedao/seedao-api-server/internal/pkg/redisstore"
 	"github.com/seedao/seedao-api-server/internal/pkg/wechatpay"
@@ -43,6 +44,19 @@ func NewEcho(cfg *config.Config, db *gorm.DB, redis *redisstore.Store) (*echo.Ec
 		return nil, err
 	}
 
+	alipayClient, err := alipay.NewClient(alipay.Config{
+		DevMode:             cfg.Alipay.DevMode,
+		AppID:               cfg.Alipay.AppID,
+		PrivateKeyPath:      cfg.Alipay.PrivateKeyPath,
+		AlipayPublicKeyPath: cfg.Alipay.AlipayPublicKeyPath,
+		NotifyURL:           cfg.Alipay.NotifyURL,
+		ReturnURL:           cfg.Alipay.ReturnURL,
+		QuitURL:             cfg.Alipay.QuitURL,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	smsSvc := service.NewSMSService(db, redis, smsSender)
 	snsSvc := service.NewSNSService(db, redis)
 	walletSvc := service.NewWalletService(redis, cfg.SIWE)
@@ -51,8 +65,8 @@ func NewEcho(cfg *config.Config, db *gorm.DB, redis *redisstore.Store) (*echo.Ec
 	statsSvc := service.NewStatsService(db)
 	membershipSvc := service.NewMembershipService(db)
 	couponSvc := service.NewCouponService(db)
-	courseSvc := service.NewCourseService(db, wxClient, cfg.WechatPay)
-	paymentSvc := service.NewPaymentService(db, redis, wxClient, cfg.WechatPay, couponSvc, courseSvc)
+	courseSvc := service.NewCourseService(db, wxClient, alipayClient, cfg.WechatPay)
+	paymentSvc := service.NewPaymentService(db, redis, wxClient, alipayClient, cfg.WechatPay, cfg.WechatPay.DevMode || cfg.Alipay.DevMode, couponSvc, courseSvc)
 	proposalSvc := service.NewProposalService(db, snsSvc, cfg.Governance)
 
 	authHandler := handler.NewAuthHandler(authSvc, smsSvc)
@@ -61,8 +75,8 @@ func NewEcho(cfg *config.Config, db *gorm.DB, redis *redisstore.Store) (*echo.Ec
 	profileHandler := handler.NewProfileHandler(profileSvc)
 	statsHandler := handler.NewStatsHandler(statsSvc)
 	membershipHandler := handler.NewMembershipHandler(membershipSvc)
-	paymentHandler := handler.NewPaymentHandler(paymentSvc, cfg.WechatPay.DevMode)
-	courseHandler := handler.NewCourseHandler(courseSvc, paymentSvc, cfg.WechatPay.DevMode)
+	paymentHandler := handler.NewPaymentHandler(paymentSvc, cfg.WechatPay.DevMode || cfg.Alipay.DevMode)
+	courseHandler := handler.NewCourseHandler(courseSvc, paymentSvc, cfg.WechatPay.DevMode || cfg.Alipay.DevMode)
 	proposalHandler := handler.NewProposalHandler(proposalSvc, profileSvc)
 
 	e := echo.New()
@@ -93,12 +107,13 @@ func NewEcho(cfg *config.Config, db *gorm.DB, redis *redisstore.Store) (*echo.Ec
 	v1.GET("/payments/orders/:order_no", paymentHandler.GetOrder, middleware.JWT(jwtMgr))
 	v1.POST("/payments/orders/:order_no/close", paymentHandler.CloseOrder, middleware.JWT(jwtMgr))
 	v1.POST("/payments/wechat/notify", paymentHandler.WechatNotify)
+	v1.POST("/payments/alipay/notify", paymentHandler.AlipayNotify)
 	v1.POST("/courses/checkout/preview", courseHandler.PreviewCheckout, middleware.OptionalJWT(jwtMgr))
 	v1.POST("/courses/orders", courseHandler.CreateOrder, middleware.OptionalJWT(jwtMgr))
 	v1.GET("/courses/orders/:order_no", courseHandler.GetOrder, middleware.OptionalJWT(jwtMgr))
 	v1.POST("/courses/orders/:order_no/close", courseHandler.CloseOrder, middleware.OptionalJWT(jwtMgr))
 	v1.POST("/courses/orders/claim", courseHandler.ClaimOrder, middleware.JWT(jwtMgr))
-	if cfg.WechatPay.DevMode {
+	if cfg.WechatPay.DevMode || cfg.Alipay.DevMode {
 		v1.POST("/payments/dev/simulate-pay", paymentHandler.SimulatePayDev, middleware.JWT(jwtMgr))
 		v1.POST("/courses/dev/orders/:order_no/simulate-pay", courseHandler.SimulatePayDev, middleware.OptionalJWT(jwtMgr))
 	}

@@ -15,6 +15,7 @@ type Config struct {
 	AliyunSMS AliyunSMSConfig `yaml:"aliyun_sms"`
 	SIWE      SIWEConfig      `yaml:"siwe"`
 	WechatPay WechatPayConfig `yaml:"wechat_pay"`
+	Alipay    AlipayConfig    `yaml:"alipay"`
 	Governance GovernanceConfig `yaml:"governance"`
 }
 
@@ -48,6 +49,16 @@ type AliyunSMSConfig struct {
 
 type SIWEConfig struct {
 	ChainID int64 `yaml:"chain_id"`
+}
+
+type AlipayConfig struct {
+	DevMode             bool   `yaml:"dev_mode"`
+	AppID               string `yaml:"app_id"`
+	PrivateKeyPath      string `yaml:"private_key_path"`
+	AlipayPublicKeyPath string `yaml:"alipay_public_key_path"`
+	NotifyURL           string `yaml:"notify_url"`
+	ReturnURL           string `yaml:"return_url"`
+	QuitURL             string `yaml:"quit_url"`
 }
 
 type WechatPayConfig struct {
@@ -112,6 +123,12 @@ func Load(path string) (*Config, error) {
 	}
 	if cfg.WechatPay.MchID == "" {
 		cfg.WechatPay.DevMode = true
+	}
+	if cfg.Alipay.AppID == "" {
+		cfg.Alipay.DevMode = true
+	}
+	if cfg.Alipay.ReturnURL == "" {
+		cfg.Alipay.ReturnURL = cfg.WechatPay.H5ReturnURL
 	}
 	if cfg.Redis.Password == "" {
 		return nil, fmt.Errorf("redis.password is required")

@@ -46,10 +46,19 @@ wechat_pay:
   wechat_public_key_path: "/app/certs/pub_key.pem"
   notify_url: "https://api.seedao.xyz/v1/payments/wechat/notify"
   h5_wap_name: "SeeDAO"
-  h5_wap_url: "https://app.seedao.top"
-  h5_return_url: "https://app.seedao.top/pay/result"
+  h5_wap_url: "https://seedao.xyz"
+  h5_return_url: "https://seedao.xyz/pay/result"
   membership_price_fen: 9900
   order_expire_minutes: 15
   description: "SeeDAO 会员续费"
+
+alipay:
+  dev_mode: false
+  app_id: "your-alipay-app-id"
+  private_key_path: "/app/certs/alipay_app_private_key.pem"
+  alipay_public_key_path: "/app/certs/alipay_public_key.pem"
+  notify_url: "https://api.seedao.xyz/v1/payments/alipay/notify"
+  return_url: "https://seedao.xyz/pay/result"
+  quit_url: "https://seedao.xyz/pay/cancel"
 
 # governance 白名单仅写在 ECS config.prod.yaml，勿提交 Git（见 docs/OPERATIONS.md）
