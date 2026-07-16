@@ -21,6 +21,15 @@ func (d *DevClient) CreateWapOrder(_ context.Context, input WapOrderInput) (*Wap
 	return &WapOrderResult{PayURL: payURL}, nil
 }
 
+func (d *DevClient) CreatePageOrder(_ context.Context, input PageOrderInput) (*PageOrderResult, error) {
+	payURL := fmt.Sprintf("https://openapi.alipay.com/gateway.do?dev_page_order=%s", url.QueryEscape(input.OrderNo))
+	if d.returnURL != "" {
+		payURL += "&return_url=" + url.QueryEscape(d.returnURL)
+	}
+	log.Printf("[dev] alipay page order %s amount=%d pay_url=%s", input.OrderNo, input.AmountFen, payURL)
+	return &PageOrderResult{PayURL: payURL}, nil
+}
+
 func (d *DevClient) ParseNotify(_ *http.Request) (*NotifyResult, error) {
 	return nil, fmt.Errorf("alipay notify is not used in dev_mode; use POST /v1/payments/dev/simulate-pay")
 }

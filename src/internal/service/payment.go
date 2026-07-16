@@ -31,26 +31,26 @@ var (
 )
 
 type PaymentService struct {
-	db      *gorm.DB
-	redis   *redisstore.Store
-	wechat  wechatpay.Client
-	alipay  alipay.Client
-	cfg     config.WechatPayConfig
-	devMode bool
-	coupon  *CouponService
-	course  *CourseService
+	db         *gorm.DB
+	redis      *redisstore.Store
+	wechat     wechatpay.Client
+	alipay     alipay.Client
+	membership config.MembershipConfig
+	devMode    bool
+	coupon     *CouponService
+	course     *CourseService
 }
 
-func NewPaymentService(db *gorm.DB, redis *redisstore.Store, wechat wechatpay.Client, alipayClient alipay.Client, cfg config.WechatPayConfig, devMode bool, coupon *CouponService, course *CourseService) *PaymentService {
+func NewPaymentService(db *gorm.DB, redis *redisstore.Store, wechat wechatpay.Client, alipayClient alipay.Client, membership config.MembershipConfig, devMode bool, coupon *CouponService, course *CourseService) *PaymentService {
 	return &PaymentService{
-		db:      db,
-		redis:   redis,
-		wechat:  wechat,
-		alipay:  alipayClient,
-		cfg:     cfg,
-		devMode: devMode,
-		coupon:  coupon,
-		course:  course,
+		db:         db,
+		redis:      redis,
+		wechat:     wechat,
+		alipay:     alipayClient,
+		membership: membership,
+		devMode:    devMode,
+		coupon:     coupon,
+		course:     course,
 	}
 }
 
@@ -149,7 +149,7 @@ func (s *PaymentService) CreateOrder(ctx context.Context, userID int64, input Cr
 	}
 
 	now := time.Now()
-	expiredAt := now.Add(time.Duration(s.cfg.OrderExpireMinutes) * time.Minute)
+	expiredAt := now.Add(time.Duration(s.membership.OrderExpireMinutes) * time.Minute)
 	orderNo := generateMembershipOrderNo(userID, now)
 
 	var payURL string
@@ -157,7 +157,7 @@ func (s *PaymentService) CreateOrder(ctx context.Context, userID int64, input Cr
 	case model.PayChannelWechatNative:
 		nativeResult, err := s.wechat.CreateNativeOrder(ctx, wechatpay.NativeOrderInput{
 			OrderNo:     orderNo,
-			Description: s.cfg.Description,
+			Description: s.membership.Description,
 			AmountFen:   finalAmountFen,
 			ExpireAt:    expiredAt,
 		})
@@ -168,7 +168,7 @@ func (s *PaymentService) CreateOrder(ctx context.Context, userID int64, input Cr
 	case model.PayChannelWechatH5:
 		h5Result, err := s.wechat.CreateH5Order(ctx, wechatpay.H5OrderInput{
 			OrderNo:     orderNo,
-			Description: s.cfg.Description,
+			Description: s.membership.Description,
 			AmountFen:   finalAmountFen,
 			ExpireAt:    expiredAt,
 			ClientIP:    input.ClientIP,
@@ -180,7 +180,7 @@ func (s *PaymentService) CreateOrder(ctx context.Context, userID int64, input Cr
 	case model.PayChannelAlipayH5:
 		wapResult, err := s.alipay.CreateWapOrder(ctx, alipay.WapOrderInput{
 			OrderNo:   orderNo,
-			Subject:   s.cfg.Description,
+			Subject:   s.membership.Description,
 			AmountFen: finalAmountFen,
 			ExpireAt:  expiredAt,
 		})
@@ -188,6 +188,17 @@ func (s *PaymentService) CreateOrder(ctx context.Context, userID int64, input Cr
 			return nil, err
 		}
 		payURL = wapResult.PayURL
+	case model.PayChannelAlipayPage:
+		pageResult, err := s.alipay.CreatePageOrder(ctx, alipay.PageOrderInput{
+			OrderNo:   orderNo,
+			Subject:   s.membership.Description,
+			AmountFen: finalAmountFen,
+			ExpireAt:  expiredAt,
+		})
+		if err != nil {
+			return nil, err
+		}
+		payURL = pageResult.PayURL
 	}
 
 	order := model.PaymentOrder{
@@ -333,7 +344,7 @@ func (s *PaymentService) HandleAlipayNotify(ctx context.Context, req *http.Reque
 
 func (s *PaymentService) closeProviderOrder(ctx context.Context, payChannel, orderNo string) error {
 	switch payChannel {
-	case model.PayChannelAlipayH5:
+	case model.PayChannelAlipayH5, model.PayChannelAlipayPage:
 		return s.alipay.CloseOrder(ctx, orderNo)
 	default:
 		return s.wechat.CloseOrder(ctx, orderNo)
@@ -451,7 +462,7 @@ func (s *PaymentService) findOwnedMembershipOrder(userID int64, orderNo string) 
 }
 
 func (s *PaymentService) calcAmountFen(days int) int64 {
-	base := s.cfg.MembershipPriceFen
+	base := s.membership.MembershipPriceFen
 	if days == model.DefaultMembershipDays {
 		return base
 	}
@@ -489,7 +500,7 @@ func toPaymentOrderView(order *model.PaymentOrder, membershipExpiresAt string) *
 		switch order.PayChannel {
 		case model.PayChannelWechatH5:
 			view.H5URL = *order.CodeURL
-		case model.PayChannelAlipayH5:
+		case model.PayChannelAlipayH5, model.PayChannelAlipayPage:
 			view.PayURL = *order.CodeURL
 		default:
 			view.CodeURL = *order.CodeURL

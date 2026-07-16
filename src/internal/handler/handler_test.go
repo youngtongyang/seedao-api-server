@@ -374,7 +374,7 @@ func TestStatsUserCount(t *testing.T) {
 	assert.Equal(t, int64(3), data["total_user_count"])
 }
 
-func TestRegisterNewSNS_DefaultMembership(t *testing.T) {
+func TestRegisterNewSNS_NoMembershipUntilPaid(t *testing.T) {
 	ts := testutil.NewTestServer(t)
 	phoneNum := "+8613900139012"
 	ts.SetSMSCode(t, phoneNum, "123456")
@@ -389,7 +389,8 @@ func TestRegisterNewSNS_DefaultMembership(t *testing.T) {
 
 	data := testutil.ParseData[map[string]interface{}](t, resp.Data)
 	user := data["user"].(map[string]interface{})
-	assert.NotEmpty(t, user["membership_expires_at"])
+	expires, _ := user["membership_expires_at"].(string)
+	assert.Empty(t, expires)
 }
 
 func TestMembershipRenew(t *testing.T) {
@@ -511,6 +512,27 @@ func TestPaymentCreateOrderAlipayH5(t *testing.T) {
 	data := testutil.ParseData[map[string]interface{}](t, resp.Data)
 	assert.NotEmpty(t, data["order_no"])
 	assert.Equal(t, "alipay_h5", data["pay_channel"])
+	assert.Equal(t, "pending", data["status"])
+	assert.NotEmpty(t, data["pay_url"])
+	assert.Empty(t, data["h5_url"])
+	assert.Empty(t, data["code_url"])
+}
+
+func TestPaymentCreateOrderAlipayPage(t *testing.T) {
+	ts := testutil.NewTestServer(t)
+	token := registerAndGetToken(t, ts, "+8613900139022", "pay_alipay_pc.seedao")
+
+	rec := testutil.DoJSON(t, ts.Echo, http.MethodPost, "/v1/payments/orders", map[string]interface{}{
+		"product_type": "membership_renew",
+		"pay_channel":  "alipay_page",
+	}, map[string]string{
+		"Authorization": "Bearer " + token,
+	})
+	resp := testutil.ParseResponse(t, rec)
+
+	data := testutil.ParseData[map[string]interface{}](t, resp.Data)
+	assert.NotEmpty(t, data["order_no"])
+	assert.Equal(t, "alipay_page", data["pay_channel"])
 	assert.Equal(t, "pending", data["status"])
 	assert.NotEmpty(t, data["pay_url"])
 	assert.Empty(t, data["h5_url"])

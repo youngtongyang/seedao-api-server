@@ -331,14 +331,16 @@ curl -X POST http://127.0.0.1:8080/v1/auth/register \
 > 接口说明：[API_PAYMENTS_v2.6.md § 一、会员优惠券](API_PAYMENTS_v2.6.md#一会员优惠券)  
 > 会员订单创建/查单/关单：`JWT` 必填；券码试算：`JWT` 可选。
 
-支持两种支付渠道，通过创建订单时的 `pay_channel` 区分：
+支持四种支付渠道，通过创建订单时的 `pay_channel` 区分：
 
 | pay_channel | 适用场景 | 前端行为 |
 |-------------|----------|----------|
 | `wechat_native`（默认） | PC 网页 | 用 `code_url` 渲染二维码，用户微信扫码 |
 | `wechat_h5` | 手机 PWA / 移动浏览器 | 跳转 `h5_url`，唤起微信 App 支付 |
+| `alipay_page` | PC 网页 | 打开 `pay_url` 进支付宝电脑网站收银台（扫码） |
+| `alipay_h5` | 手机浏览器 | 跳转 `pay_url`，唤起支付宝 App 支付 |
 
-本地默认 `wechat_pay.dev_mode: true`（未配置商户号时自动开启），可用模拟支付接口联调；生产环境需配置真实微信商户参数并将 `dev_mode` 设为 `false`。
+本地默认 `wechat_pay.dev_mode: true` / `alipay.dev_mode: true`（未配置商户号时自动开启），可用模拟支付接口联调；生产环境需配置真实商户参数并将 `dev_mode` 设为 `false`。
 
 **测试变量补充：**
 
@@ -348,14 +350,15 @@ curl -X POST http://127.0.0.1:8080/v1/auth/register \
 | `ORDER_TOKEN` | 无主课程订单创建时返回，仅一次 |
 | `COURSE_ID` / `SKU_ID` | 课程与票种 ID（见库表配置） |
 
-**价格说明：** 默认年费 `9900` 分（99 元），由服务端 `wechat_pay.membership_price_fen` 配置，前端不传金额。
+**价格说明：** 默认年费 `9900` 分（99 元），由服务端 `membership.membership_price_fen` 配置，前端不传金额。
 
 **前端选渠道示例：**
 
 ```javascript
-const payChannel = /Mobile|Android|iPhone/i.test(navigator.userAgent)
-  ? 'wechat_h5'
-  : 'wechat_native'
+const isMobile = /Mobile|Android|iPhone/i.test(navigator.userAgent)
+const payChannel = useAlipay
+  ? (isMobile ? 'alipay_h5' : 'alipay_page')
+  : (isMobile ? 'wechat_h5' : 'wechat_native')
 ```
 
 ### 14. 创建支付订单
@@ -429,6 +432,52 @@ curl -X POST http://127.0.0.1:8080/v1/payments/orders \
 前端收到 `h5_url` 后直接 `window.location.href = h5_url` 跳转；支付完成后微信会跳回 `h5_return_url`（服务端配置），同时前端应继续轮询订单状态确认支付结果。
 
 > H5 下单时服务端会自动读取请求来源 IP（`ClientIP`），无需前端传递。
+
+#### 14c. PC 支付宝（电脑网站支付）
+
+需开放平台已签约「电脑网站支付」。
+
+```bash
+curl -X POST http://127.0.0.1:8080/v1/payments/orders \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <TOKEN>" \
+  -d '{
+    "product_type": "membership_renew",
+    "pay_channel": "alipay_page"
+  }'
+```
+
+成功预期：
+
+```json
+{
+  "code": 0,
+  "data": {
+    "order_no": "M202606201430001234",
+    "pay_channel": "alipay_page",
+    "amount": 9900,
+    "status": "pending",
+    "pay_url": "https://openapi.alipay.com/gateway.do?...",
+    "expired_at": "2026-06-20T14:45:00Z"
+  }
+}
+```
+
+前端：`window.open(data.pay_url)` 或 `location.href = data.pay_url` 打开支付宝 PC 收银台；付完后跳回 `alipay.return_url`，并轮询订单状态。异步通知：`POST /v1/payments/alipay/notify`（与 H5 共用）。
+
+#### 14d. 手机支付宝 H5
+
+```bash
+curl -X POST http://127.0.0.1:8080/v1/payments/orders \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <TOKEN>" \
+  -d '{
+    "product_type": "membership_renew",
+    "pay_channel": "alipay_h5"
+  }'
+```
+
+响应字段同 14c，`pay_channel` 为 `alipay_h5`，前端跳转 `pay_url`。
 
 `days` 可省略，默认 `365`。非 365 天时金额按年费比例折算。
 

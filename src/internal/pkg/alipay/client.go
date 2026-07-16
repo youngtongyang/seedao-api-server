@@ -8,13 +8,25 @@ import (
 )
 
 type WapOrderInput struct {
-	OrderNo     string
-	Subject     string
-	AmountFen   int64
-	ExpireAt    time.Time
+	OrderNo   string
+	Subject   string
+	AmountFen int64
+	ExpireAt  time.Time
 }
 
 type WapOrderResult struct {
+	PayURL string
+}
+
+// PageOrderInput is for PC 电脑网站支付 (alipay.trade.page.pay).
+type PageOrderInput struct {
+	OrderNo   string
+	Subject   string
+	AmountFen int64
+	ExpireAt  time.Time
+}
+
+type PageOrderResult struct {
 	PayURL string
 }
 
@@ -28,6 +40,7 @@ type NotifyResult struct {
 
 type Client interface {
 	CreateWapOrder(ctx context.Context, input WapOrderInput) (*WapOrderResult, error)
+	CreatePageOrder(ctx context.Context, input PageOrderInput) (*PageOrderResult, error)
 	ParseNotify(req *http.Request) (*NotifyResult, error)
 	CloseOrder(ctx context.Context, orderNo string) error
 }

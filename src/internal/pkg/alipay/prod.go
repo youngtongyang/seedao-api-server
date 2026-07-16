@@ -72,6 +72,27 @@ func (c *prodClient) CreateWapOrder(ctx context.Context, input WapOrderInput) (*
 	return &WapOrderResult{PayURL: payURL.String()}, nil
 }
 
+func (c *prodClient) CreatePageOrder(ctx context.Context, input PageOrderInput) (*PageOrderResult, error) {
+	var p alipay.TradePagePay
+	p.NotifyURL = c.notifyURL
+	p.ReturnURL = c.returnURL
+	p.Subject = input.Subject
+	p.OutTradeNo = input.OrderNo
+	p.TotalAmount = fenToYuanString(input.AmountFen)
+	p.ProductCode = "FAST_INSTANT_TRADE_PAY"
+	p.TimeoutExpress = formatTimeoutExpress(input.ExpireAt)
+
+	payURL, err := c.client.TradePagePay(p)
+	if err != nil {
+		return nil, fmt.Errorf("alipay page pay: %w", err)
+	}
+	if payURL == nil || strings.TrimSpace(payURL.String()) == "" {
+		return nil, fmt.Errorf("alipay page pay: empty pay_url")
+	}
+
+	return &PageOrderResult{PayURL: payURL.String()}, nil
+}
+
 func (c *prodClient) ParseNotify(req *http.Request) (*NotifyResult, error) {
 	if err := req.ParseForm(); err != nil {
 		return nil, fmt.Errorf("parse alipay notify form: %w", err)

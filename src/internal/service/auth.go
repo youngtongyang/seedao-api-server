@@ -130,16 +130,15 @@ func (s *AuthService) RegisterNewSNS(ctx context.Context, input RegisterNewSNSIn
 	}
 
 	now := time.Now()
-	membershipExpiresAt := DefaultMembershipExpiry(now)
 	var user model.User
 
 	err = s.db.Transaction(func(tx *gorm.DB) error {
 		user = model.User{
-			RegisterSource:      model.RegisterSourceNewSNS,
-			Status:              model.UserStatusActive,
-			MembershipExpiresAt: &membershipExpiresAt,
-			CreatedAt:           now,
-			UpdatedAt:           now,
+			RegisterSource: model.RegisterSourceNewSNS,
+			Status:         model.UserStatusActive,
+			// MembershipExpiresAt stays nil until payment succeeds.
+			CreatedAt: now,
+			UpdatedAt: now,
 		}
 		if err := tx.Create(&user).Error; err != nil {
 			return err
@@ -200,7 +199,6 @@ func (s *AuthService) RegisterExistingSNS(ctx context.Context, input RegisterExi
 	}
 
 	now := time.Now()
-	membershipExpiresAt := DefaultMembershipExpiry(now)
 	var user model.User
 	var snsName string
 
@@ -215,11 +213,11 @@ func (s *AuthService) RegisterExistingSNS(ctx context.Context, input RegisterExi
 		snsName = registry.SNSName
 
 		user = model.User{
-			RegisterSource:      model.RegisterSourceExistingSNS,
-			Status:              model.UserStatusActive,
-			MembershipExpiresAt: &membershipExpiresAt,
-			CreatedAt:           now,
-			UpdatedAt:           now,
+			RegisterSource: model.RegisterSourceExistingSNS,
+			Status:         model.UserStatusActive,
+			// MembershipExpiresAt stays nil until payment succeeds.
+			CreatedAt: now,
+			UpdatedAt: now,
 		}
 		if err := tx.Create(&user).Error; err != nil {
 			return err

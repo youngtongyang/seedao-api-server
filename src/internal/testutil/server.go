@@ -58,18 +58,20 @@ func NewTestServer(t *testing.T) *TestServer {
 			DevMode:      true,
 		},
 		SIWE: config.SIWEConfig{ChainID: 1},
-		WechatPay: config.WechatPayConfig{
-			DevMode:            true,
-			H5WapName:          "SeeDAO",
-			H5WapURL:           "https://seedao.xyz",
-			H5ReturnURL:        "https://seedao.xyz/pay/result",
+		Membership: config.MembershipConfig{
 			MembershipPriceFen: 9900,
-			OrderExpireMinutes: 15,
-			Description:        "SeeDAO 会员续费",
+			OrderExpireMinutes: 30,
+			Description:        "SEEDAO 年度会员",
+		},
+		WechatPay: config.WechatPayConfig{
+			DevMode:     true,
+			H5WapName:   "SeeDAO",
+			H5WapURL:    "https://seedao.xyz",
+			H5ReturnURL: "https://seedao.xyz/pay/result",
 		},
 		Alipay: config.AlipayConfig{
-			DevMode:    true,
-			ReturnURL:  "https://seedao.xyz/pay/result",
+			DevMode:   true,
+			ReturnURL: "https://seedao.xyz/pay/result",
 		},
 		Governance: config.GovernanceConfig{
 			QuarterNodeTotal:           4,

@@ -30,14 +30,15 @@ var (
 )
 
 type CourseService struct {
-	db     *gorm.DB
-	wechat wechatpay.Client
-	alipay alipay.Client
-	cfg    config.WechatPayConfig
+	db         *gorm.DB
+	wechat     wechatpay.Client
+	alipay     alipay.Client
+	membership config.MembershipConfig
+	devMode    bool
 }
 
-func NewCourseService(db *gorm.DB, wechat wechatpay.Client, alipayClient alipay.Client, cfg config.WechatPayConfig) *CourseService {
-	return &CourseService{db: db, wechat: wechat, alipay: alipayClient, cfg: cfg}
+func NewCourseService(db *gorm.DB, wechat wechatpay.Client, alipayClient alipay.Client, membership config.MembershipConfig, devMode bool) *CourseService {
+	return &CourseService{db: db, wechat: wechat, alipay: alipayClient, membership: membership, devMode: devMode}
 }
 
 type CourseProductRef struct {
@@ -174,7 +175,7 @@ func (s *CourseService) CreateOrder(ctx context.Context, input CreateCourseOrder
 	}
 
 	now := time.Now()
-	expiredAt := now.Add(time.Duration(s.cfg.OrderExpireMinutes) * time.Minute)
+	expiredAt := now.Add(time.Duration(s.membership.OrderExpireMinutes) * time.Minute)
 	orderNo := generateCourseOrderNo(now)
 
 	var userID *int64
@@ -255,6 +256,17 @@ func (s *CourseService) CreateOrder(ctx context.Context, input CreateCourseOrder
 			return nil, err
 		}
 		payURL = wapResult.PayURL
+	case model.PayChannelAlipayPage:
+		pageResult, err := s.alipay.CreatePageOrder(ctx, alipay.PageOrderInput{
+			OrderNo:   orderNo,
+			Subject:   description,
+			AmountFen: int64(finalAmount),
+			ExpireAt:  expiredAt,
+		})
+		if err != nil {
+			return nil, err
+		}
+		payURL = pageResult.PayURL
 	}
 
 	order := model.PaymentOrder{
@@ -376,7 +388,7 @@ func (s *CourseService) ClaimOrder(userID int64, orderNo, token string) (*Course
 }
 
 func (s *CourseService) SimulatePayDev(ctx context.Context, userID int64, userKnown bool, orderNo, token string, completeFn func(context.Context, string, string, int64, string, time.Time) error) (*CourseOrderView, error) {
-	if !s.cfg.DevMode {
+	if !s.devMode {
 		return nil, ErrInvalidParam
 	}
 
@@ -656,7 +668,7 @@ func toCourseOrderView(order *model.PaymentOrder, discounts []CourseDiscountLine
 		switch order.PayChannel {
 		case model.PayChannelWechatH5:
 			view.H5URL = *order.CodeURL
-		case model.PayChannelAlipayH5:
+		case model.PayChannelAlipayH5, model.PayChannelAlipayPage:
 			view.PayURL = *order.CodeURL
 		default:
 			view.CodeURL = *order.CodeURL
@@ -708,7 +720,7 @@ func normalizeChannelCode(code string) string {
 
 func (s *CourseService) closeProviderOrder(ctx context.Context, payChannel, orderNo string) error {
 	switch payChannel {
-	case model.PayChannelAlipayH5:
+	case model.PayChannelAlipayH5, model.PayChannelAlipayPage:
 		return s.alipay.CloseOrder(ctx, orderNo)
 	default:
 		return s.wechat.CloseOrder(ctx, orderNo)

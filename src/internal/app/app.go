@@ -65,8 +65,9 @@ func NewEcho(cfg *config.Config, db *gorm.DB, redis *redisstore.Store) (*echo.Ec
 	statsSvc := service.NewStatsService(db)
 	membershipSvc := service.NewMembershipService(db)
 	couponSvc := service.NewCouponService(db)
-	courseSvc := service.NewCourseService(db, wxClient, alipayClient, cfg.WechatPay)
-	paymentSvc := service.NewPaymentService(db, redis, wxClient, alipayClient, cfg.WechatPay, cfg.WechatPay.DevMode || cfg.Alipay.DevMode, couponSvc, courseSvc)
+	payDevMode := cfg.WechatPay.DevMode || cfg.Alipay.DevMode
+	courseSvc := service.NewCourseService(db, wxClient, alipayClient, cfg.Membership, payDevMode)
+	paymentSvc := service.NewPaymentService(db, redis, wxClient, alipayClient, cfg.Membership, payDevMode, couponSvc, courseSvc)
 	proposalSvc := service.NewProposalService(db, snsSvc, cfg.Governance)
 
 	authHandler := handler.NewAuthHandler(authSvc, smsSvc)
@@ -75,8 +76,8 @@ func NewEcho(cfg *config.Config, db *gorm.DB, redis *redisstore.Store) (*echo.Ec
 	profileHandler := handler.NewProfileHandler(profileSvc)
 	statsHandler := handler.NewStatsHandler(statsSvc)
 	membershipHandler := handler.NewMembershipHandler(membershipSvc)
-	paymentHandler := handler.NewPaymentHandler(paymentSvc, cfg.WechatPay.DevMode || cfg.Alipay.DevMode)
-	courseHandler := handler.NewCourseHandler(courseSvc, paymentSvc, cfg.WechatPay.DevMode || cfg.Alipay.DevMode)
+	paymentHandler := handler.NewPaymentHandler(paymentSvc, payDevMode)
+	courseHandler := handler.NewCourseHandler(courseSvc, paymentSvc, payDevMode)
 	proposalHandler := handler.NewProposalHandler(proposalSvc, profileSvc)
 
 	e := echo.New()

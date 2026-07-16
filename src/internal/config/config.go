@@ -8,14 +8,15 @@ import (
 )
 
 type Config struct {
-	Server    ServerConfig    `yaml:"server"`
-	Database  DatabaseConfig  `yaml:"database"`
-	Redis     RedisConfig     `yaml:"redis"`
-	JWT       JWTConfig       `yaml:"jwt"`
-	AliyunSMS AliyunSMSConfig `yaml:"aliyun_sms"`
-	SIWE      SIWEConfig      `yaml:"siwe"`
-	WechatPay WechatPayConfig `yaml:"wechat_pay"`
-	Alipay    AlipayConfig    `yaml:"alipay"`
+	Server     ServerConfig     `yaml:"server"`
+	Database   DatabaseConfig   `yaml:"database"`
+	Redis      RedisConfig      `yaml:"redis"`
+	JWT        JWTConfig        `yaml:"jwt"`
+	AliyunSMS  AliyunSMSConfig  `yaml:"aliyun_sms"`
+	SIWE       SIWEConfig       `yaml:"siwe"`
+	Membership MembershipConfig `yaml:"membership"`
+	WechatPay  WechatPayConfig  `yaml:"wechat_pay"`
+	Alipay     AlipayConfig     `yaml:"alipay"`
 	Governance GovernanceConfig `yaml:"governance"`
 }
 
@@ -51,6 +52,13 @@ type SIWEConfig struct {
 	ChainID int64 `yaml:"chain_id"`
 }
 
+// MembershipConfig holds product pricing / order metadata shared by WeChat and Alipay.
+type MembershipConfig struct {
+	MembershipPriceFen int64  `yaml:"membership_price_fen"`
+	OrderExpireMinutes int    `yaml:"order_expire_minutes"`
+	Description        string `yaml:"description"`
+}
+
 type AlipayConfig struct {
 	DevMode             bool   `yaml:"dev_mode"`
 	AppID               string `yaml:"app_id"`
@@ -62,21 +70,18 @@ type AlipayConfig struct {
 }
 
 type WechatPayConfig struct {
-	DevMode              bool   `yaml:"dev_mode"`
-	MchID                string `yaml:"mch_id"`
-	AppID                string `yaml:"app_id"`
-	APIv3Key             string `yaml:"api_v3_key"`
-	CertSerialNo         string `yaml:"cert_serial_no"`
-	PrivateKeyPath       string `yaml:"private_key_path"`
-	WechatPublicKeyID    string `yaml:"wechat_public_key_id"`
-	WechatPublicKeyPath  string `yaml:"wechat_public_key_path"`
-	NotifyURL            string `yaml:"notify_url"`
-	H5WapName            string `yaml:"h5_wap_name"`
-	H5WapURL             string `yaml:"h5_wap_url"`
-	H5ReturnURL          string `yaml:"h5_return_url"`
-	MembershipPriceFen   int64  `yaml:"membership_price_fen"`
-	OrderExpireMinutes   int    `yaml:"order_expire_minutes"`
-	Description          string `yaml:"description"`
+	DevMode             bool   `yaml:"dev_mode"`
+	MchID               string `yaml:"mch_id"`
+	AppID               string `yaml:"app_id"`
+	APIv3Key            string `yaml:"api_v3_key"`
+	CertSerialNo        string `yaml:"cert_serial_no"`
+	PrivateKeyPath      string `yaml:"private_key_path"`
+	WechatPublicKeyID   string `yaml:"wechat_public_key_id"`
+	WechatPublicKeyPath string `yaml:"wechat_public_key_path"`
+	NotifyURL           string `yaml:"notify_url"`
+	H5WapName           string `yaml:"h5_wap_name"`
+	H5WapURL            string `yaml:"h5_wap_url"`
+	H5ReturnURL         string `yaml:"h5_return_url"`
 }
 
 type GovernanceConfig struct {
@@ -109,14 +114,14 @@ func Load(path string) (*Config, error) {
 	if cfg.SIWE.ChainID == 0 {
 		cfg.SIWE.ChainID = 1
 	}
-	if cfg.WechatPay.MembershipPriceFen == 0 {
-		cfg.WechatPay.MembershipPriceFen = 9900
+	if cfg.Membership.MembershipPriceFen == 0 {
+		cfg.Membership.MembershipPriceFen = 9900
 	}
-	if cfg.WechatPay.OrderExpireMinutes == 0 {
-		cfg.WechatPay.OrderExpireMinutes = 15
+	if cfg.Membership.OrderExpireMinutes == 0 {
+		cfg.Membership.OrderExpireMinutes = 30
 	}
-	if cfg.WechatPay.Description == "" {
-		cfg.WechatPay.Description = "SeeDAO 会员续费"
+	if cfg.Membership.Description == "" {
+		cfg.Membership.Description = "SEEDAO 年度会员"
 	}
 	if cfg.WechatPay.H5WapName == "" {
 		cfg.WechatPay.H5WapName = "SeeDAO"

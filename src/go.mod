@@ -12,6 +12,7 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/labstack/echo/v4 v4.12.0
 	github.com/redis/go-redis/v9 v9.7.0
+	github.com/smartwalle/alipay/v3 v3.2.30
 	github.com/spruceid/siwe-go v0.2.1
 	github.com/stretchr/testify v1.11.1
 	github.com/swaggo/echo-swagger v1.5.2
@@ -66,7 +67,6 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/relvacode/iso8601 v1.1.1-0.20210511065120-b30b151cc433 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
-	github.com/smartwalle/alipay/v3 v3.2.30 // indirect
 	github.com/smartwalle/ncrypto v1.0.4 // indirect
 	github.com/smartwalle/ngx v1.1.1 // indirect
 	github.com/smartwalle/nsign v1.0.9 // indirect

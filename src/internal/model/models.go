@@ -24,6 +24,7 @@ const (
 	PayChannelWechatNative = "wechat_native"
 	PayChannelWechatH5     = "wechat_h5"
 	PayChannelAlipayH5     = "alipay_h5"
+	PayChannelAlipayPage   = "alipay_page"
 
 	PaymentOrderStatusPending = "pending"
 	PaymentOrderStatusPaid    = "paid"
@@ -57,7 +58,7 @@ const (
 
 func ValidPayChannel(payChannel string) bool {
 	switch payChannel {
-	case PayChannelWechatNative, PayChannelWechatH5, PayChannelAlipayH5:
+	case PayChannelWechatNative, PayChannelWechatH5, PayChannelAlipayH5, PayChannelAlipayPage:
 		return true
 	default:
 		return false
