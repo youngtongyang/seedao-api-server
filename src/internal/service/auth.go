@@ -212,12 +212,14 @@ func (s *AuthService) RegisterExistingSNS(ctx context.Context, input RegisterExi
 		}
 		snsName = registry.SNSName
 
+		// existing_sns claim grants 1-year membership; new_sns still requires payment.
+		expiresAt := DefaultMembershipExpiry(now)
 		user = model.User{
-			RegisterSource: model.RegisterSourceExistingSNS,
-			Status:         model.UserStatusActive,
-			// MembershipExpiresAt stays nil until payment succeeds.
-			CreatedAt: now,
-			UpdatedAt: now,
+			RegisterSource:      model.RegisterSourceExistingSNS,
+			Status:              model.UserStatusActive,
+			MembershipExpiresAt: &expiresAt,
+			CreatedAt:           now,
+			UpdatedAt:           now,
 		}
 		if err := tx.Create(&user).Error; err != nil {
 			return err
