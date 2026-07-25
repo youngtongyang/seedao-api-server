@@ -1,5 +1,4 @@
--- Add SIP label column for legacy/imported proposals
+-- Add SIP number column (0 = unassigned). Matches model.Proposal.SIP (int).
+-- Index + sequence are created in 009 (also upgrades legacy varchar sip).
 
-ALTER TABLE proposal ADD COLUMN IF NOT EXISTS sip VARCHAR(64);
-
-CREATE INDEX IF NOT EXISTS idx_proposal_sip ON proposal (sip) WHERE sip IS NOT NULL AND sip <> '';
+ALTER TABLE proposal ADD COLUMN IF NOT EXISTS sip BIGINT NOT NULL DEFAULT 0;

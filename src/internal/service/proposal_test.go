@@ -268,6 +268,25 @@ func TestProposalListExcludesErrorStatus(t *testing.T) {
 	assert.Equal(t, "ok", list.Items[0].Title)
 }
 
+func TestProposalListExcludesTestTitlePrefix(t *testing.T) {
+	svc := newProposalTestDB(t)
+	sns := "tester"
+	now := time.Now()
+
+	for _, p := range []model.Proposal{
+		{Type: model.ProposalTypeHallRegular, Title: "正式提案", Content: []byte(`{}`), ProposerSNS: &sns, ProposerWallet: "0x1", Status: model.ProposalStatusDraft, ResolutionRule: model.ProposalResolutionStandard, CreatedAt: now, UpdatedAt: now},
+		{Type: model.ProposalTypeHallRegular, Title: "test-本地联调", Content: []byte(`{}`), ProposerSNS: &sns, ProposerWallet: "0x1", Status: model.ProposalStatusDraft, ResolutionRule: model.ProposalResolutionStandard, CreatedAt: now.Add(-time.Minute), UpdatedAt: now},
+		{Type: model.ProposalTypeHallRegular, Title: "TEST-忽略大小写", Content: []byte(`{}`), ProposerSNS: &sns, ProposerWallet: "0x1", Status: model.ProposalStatusPublished, ResolutionRule: model.ProposalResolutionStandard, CreatedAt: now.Add(-2 * time.Minute), UpdatedAt: now},
+	} {
+		require.NoError(t, svc.db.Create(&p).Error)
+	}
+
+	list, err := svc.List(10, 0, "", "")
+	require.NoError(t, err)
+	require.Len(t, list.Items, 1)
+	assert.Equal(t, "正式提案", list.Items[0].Title)
+}
+
 func TestGetProposalByLegacyID(t *testing.T) {
 	svc := newProposalTestDB(t)
 	sns := "legacy"

@@ -185,6 +185,8 @@ func (s *ProposalService) List(limit int, beforeID int64, proposalType, status s
 	}
 
 	q := s.db.Model(&model.Proposal{})
+	// Hide local/test drafts from the public feed (title prefix, case-insensitive).
+	q = q.Where("LOWER(title) NOT LIKE ?", "test-%")
 	if proposalType != "" {
 		q = q.Where("type = ?", proposalType)
 	}

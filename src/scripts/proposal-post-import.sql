@@ -5,7 +5,7 @@ ALTER TABLE proposal_vote_v2 RENAME TO proposal_vote;
 ALTER TABLE proposal_comment_v2 RENAME TO proposal_comment;
 
 ALTER TABLE proposal ADD COLUMN IF NOT EXISTS resolution_rule VARCHAR(32) NOT NULL DEFAULT 'standard';
-ALTER TABLE proposal ADD COLUMN IF NOT EXISTS sip VARCHAR(64);
+ALTER TABLE proposal ADD COLUMN IF NOT EXISTS sip BIGINT NOT NULL DEFAULT 0;
 
 DO $$
 BEGIN
@@ -22,4 +22,4 @@ END $$;
 
 ALTER TABLE proposal ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
 
-CREATE INDEX IF NOT EXISTS idx_proposal_sip ON proposal (sip) WHERE sip IS NOT NULL AND sip <> '';
+-- Index created/normalized in 009_proposal_sip_alloc.sql after sip is BIGINT.
