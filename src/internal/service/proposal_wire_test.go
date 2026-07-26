@@ -34,6 +34,10 @@ func TestNormalizeResolutionRule(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "meta_rule", got)
 
+	got, err = normalizeResolutionRule("node_assembly")
+	require.NoError(t, err)
+	assert.Equal(t, "standard", got)
+
 	_, err = normalizeResolutionRule("bad_rule")
 	require.Error(t, err)
 	var paramErr *ProposalParamError

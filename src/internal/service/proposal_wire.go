@@ -65,14 +65,15 @@ var creatableProposalTypes = map[string]struct{}{
 }
 
 var resolutionRuleAliases = map[string]string{
-	"":                              model.ProposalResolutionStandard,
+	"":                               model.ProposalResolutionStandard,
 	model.ProposalResolutionStandard: model.ProposalResolutionStandard,
 	model.ProposalResolutionMetaRule: model.ProposalResolutionMetaRule,
-	"town_hall_standard":            model.ProposalResolutionMetaRule,
-	"node_consensus_special":        model.ProposalResolutionStandard,
-	"p1_standard":                   model.ProposalResolutionStandard,
-	"p2_standard":                   model.ProposalResolutionStandard,
-	"p3_standard":                   model.ProposalResolutionStandard,
+	"town_hall_standard":             model.ProposalResolutionMetaRule,
+	"node_consensus_special":         model.ProposalResolutionStandard,
+	"node_assembly":                  model.ProposalResolutionStandard,
+	"p1_standard":                    model.ProposalResolutionStandard,
+	"p2_standard":                    model.ProposalResolutionStandard,
+	"p3_standard":                    model.ProposalResolutionStandard,
 }
 
 func normalizeCreateProposalType(raw string) (string, error) {

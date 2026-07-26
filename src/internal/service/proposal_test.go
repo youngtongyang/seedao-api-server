@@ -139,6 +139,41 @@ func TestProposalServicePublishAndVote(t *testing.T) {
 	assert.ErrorIs(t, err, ErrProposalAlreadyVoted)
 }
 
+func TestHallPublishSkipsPublicity(t *testing.T) {
+	svc := newProposalTestDB(t)
+	content, _ := json.Marshal(map[string]string{"plain_text": "hall"})
+
+	created, err := svc.CreateDraft(CreateProposalInput{
+		Type:     model.ProposalTypeHallRegular,
+		Title:    "hall no publicity",
+		Content:  content,
+		ActorSNS: "hall.seedao",
+	})
+	require.NoError(t, err)
+
+	// Even if client requests a publicity window, hall proposals force 0.
+	pubSec := 259200
+	voteSec := 3600
+	published, err := svc.Publish(created.ID, PublishProposalInput{
+		PublicitySeconds:    &pubSec,
+		VoteDurationSeconds: &voteSec,
+		ActorSNS:            "hall.seedao",
+	})
+	require.NoError(t, err)
+	require.NotNil(t, published.PublicitySeconds)
+	assert.Equal(t, 0, *published.PublicitySeconds)
+	require.NotNil(t, published.PublishedAt)
+	require.NotNil(t, published.PublicityEndAt)
+	assert.Equal(t, *published.PublishedAt, *published.PublicityEndAt)
+
+	_, err = svc.CastVote(CastVoteInput{
+		ProposalID: created.ID,
+		VoteResult: "1",
+		ActorSNS:   "hall_voter.seedao",
+	})
+	require.NoError(t, err)
+}
+
 func TestProposalServiceCommentAndFinalize(t *testing.T) {
 	svc := newProposalTestDB(t)
 	now := time.Now()

@@ -497,13 +497,23 @@ func (s *ProposalService) Publish(id int64, input PublishProposalInput) (*Propos
 	if input.VoteDurationSeconds != nil && *input.VoteDurationSeconds > 0 {
 		voteSec = *input.VoteDurationSeconds
 	}
+	// 市政厅提案无公示期：发布后立即进入可投票窗口。
+	if proposalTypeFamily(p.Type) == "hall" {
+		pubSec = 0
+	}
 
 	now := time.Now()
 	pubEnd := now.Add(time.Duration(pubSec) * time.Second)
 	voteEnd := pubEnd.Add(time.Duration(voteSec) * time.Second)
 
+	status := model.ProposalStatusPublicity
+	if pubSec == 0 {
+		// No publicity window: surface as published so clients show voting, not publicity.
+		status = model.ProposalStatusPublished
+	}
+
 	updates := map[string]interface{}{
-		"status":                model.ProposalStatusPublicity,
+		"status":                status,
 		"published_at":          now,
 		"publicity_end_at":      pubEnd,
 		"vote_end_at":           voteEnd,
