@@ -18,7 +18,7 @@ import (
 
 // @title           SeeDAO API Server
 // @version         2.7
-// @description     SeeDAO 后端 API（认证、支付、课程、治理提案等）
+// @description     SeeDAO 后端 API（认证、支付、课程、治理提案、飞书绑定等）
 // @host            api.seedao.xyz
 // @BasePath        /
 //
@@ -33,13 +33,15 @@ import (
 // @tag.name        stats
 // @tag.description 统计 /v1/stats
 // @tag.name        user
-// @tag.description 用户 /v1/user
+// @tag.description 用户 /v1/user（含飞书绑定）
 // @tag.name        payments
 // @tag.description 支付 /v1/payments
 // @tag.name        courses
 // @tag.description 课程 /v1/courses
 // @tag.name        proposals
 // @tag.description 提案 /v1/proposals
+// @tag.name        internal
+// @tag.description 内部服务间接口 /internal/v1（土地神等，X-Service-Token）
 //
 // @securityDefinitions.apikey BearerAuth
 // @in header

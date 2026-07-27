@@ -2,7 +2,7 @@
 
 SeeDAO 2.0 用户认证与 SNS 服务 API（v2.7）。
 
-面向 Web / H5 客户端，提供手机号验证码注册/登录、SNS 名称校验与预留、老用户钱包认领链上 SNS、个人 Profile、首页用户统计、会员微信支付、课程售卖等能力。运行时零链上 RPC 依赖。
+面向 Web / H5 客户端，提供手机号验证码注册/登录、SNS 名称校验与预留、老用户钱包认领链上 SNS、个人 Profile、飞书账号绑定（土地神）、首页用户统计、会员微信支付、课程售卖、治理提案等能力。运行时零链上 RPC 依赖。
 
 ## 项目结构
 
@@ -14,12 +14,12 @@ seedao-api-server/
 │   │   ├── app/                  # 路由与应用组装
 │   │   ├── config/               # 配置加载
 │   │   ├── handler/              # HTTP 层 + 单元测试
-│   │   ├── middleware/           # JWT 鉴权
-│   │   ├── service/              # 业务逻辑
+│   │   ├── middleware/           # JWT / Service Token 鉴权
+│   │   ├── service/              # 业务逻辑（含 oauth_binding）
 │   │   ├── model/                # GORM 实体
 │   │   ├── testutil/             # 测试工具
-│   │   └── pkg/                  # jwt / siwe / redis / sms 等
-│   ├── migrations/               # SQL 迁移
+│   │   └── pkg/                  # jwt / siwe / redis / sms / bindtoken 等
+│   ├── migrations/               # SQL 迁移（含 010_user_oauth_bindings）
 │   ├── scripts/                  # 建库、导入、本地启动脚本
 │   ├── config/
 │   │   ├── config.local.example.yaml
@@ -39,7 +39,9 @@ seedao-api-server/
 │   ├── API_CHANGELOG.md       # 版本变更一览
 │   ├── API_PAYMENTS_v2.6.md   # v2.6 支付/课程业务说明
 │   ├── API_GOVERNANCE.md      # v2.7 治理/提案（含内部配置）
-│   └── API_TEST.md            # 本地联调 curl
+│   ├── API_TEST.md            # 本地联调 curl
+│   └── feishu-bindings/       # 飞书绑定（土地神 Token）方案与流程图
+│       └── README.md
 └── README.md
 ```
 
@@ -70,6 +72,8 @@ cp config.local.example.yaml config.local.yaml
 | `aliyun_sms.dev_mode` | local 可设 `true`（日志验证码）；dev/prod 设 `false`（真实发短信） |
 | `siwe.chain_id` | SIWE 验签链 ID |
 | `wechat_pay.*` | 微信支付（会员续费）；生产 `dev_mode: false`，需挂载商户证书 |
+| `feishu.*` | 飞书绑定：`app_id`、token/code TTL、`bind_url_template` |
+| `internal.service_token` | 土地神调用 `/internal/v1/feishu/*` 的共享密钥 |
 
 ## API 文档
 
@@ -84,6 +88,7 @@ cp config.local.example.yaml config.local.yaml
 | [docs/API_CHANGELOG.md](docs/API_CHANGELOG.md) | 按版本整理的接口变更一览 |
 | [docs/API_PAYMENTS_v2.6.md](docs/API_PAYMENTS_v2.6.md) | 支付/课程业务规则与前端对接流程 |
 | [docs/API_GOVERNANCE.md](docs/API_GOVERNANCE.md) | 治理/提案（含白名单配置、导入脚本） |
+| [docs/feishu-bindings/README.md](docs/feishu-bindings/README.md) | 飞书绑定方案、流程图与接口说明 |
 
 修改 handler 注释后于 `src/` 重新生成 OpenAPI：
 
@@ -131,6 +136,10 @@ go run github.com/swaggo/swag/cmd/swag@latest init -g cmd/server/main.go -o docs
 | 40025 | 不在投票人白名单 |
 | 40026 | 需绑定 SNS |
 | 40027 | 未找到该用户投票 |
+| 40040 | 飞书未绑定 |
+| 40041 | 当前用户已绑定飞书 |
+| 40042 | 该飞书账号已被其他用户绑定 |
+| 40043 | 飞书 bind_token / bind_code 无效或过期 |
 | 42901 | 发送过于频繁 |
 | 50000 | 服务器内部错误 |
 
