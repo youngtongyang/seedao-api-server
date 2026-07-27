@@ -109,6 +109,14 @@ func mapServiceError(c echo.Context, err error) error {
 		return response.Fail(c, http.StatusBadRequest, errcode.ProposalVoteNotFound)
 	case errors.Is(err, service.ErrProposalAssociateSIPMissing):
 		return failWithReason(c, http.StatusBadRequest, errcode.ProposalInvalidStatus, "associate proposal has no SIP assigned")
+	case errors.Is(err, service.ErrFeishuNotBound):
+		return response.Fail(c, http.StatusBadRequest, errcode.FeishuNotBound)
+	case errors.Is(err, service.ErrFeishuAlreadyBound):
+		return response.Fail(c, http.StatusBadRequest, errcode.FeishuAlreadyBound)
+	case errors.Is(err, service.ErrFeishuOpenIDTaken):
+		return response.Fail(c, http.StatusBadRequest, errcode.FeishuOpenIDTaken)
+	case errors.Is(err, service.ErrFeishuBindCredentialInvalid):
+		return response.Fail(c, http.StatusBadRequest, errcode.FeishuBindCredentialInvalid)
 	default:
 		c.Logger().Error(err)
 		if middleware.IsDebug(c) {

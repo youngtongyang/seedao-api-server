@@ -46,3 +46,12 @@ alipay:
   notify_url: "https://dev-api.example.com/v1/payments/alipay/notify"
   return_url: "https://dev-app.seedao.top/pay/result"
   quit_url: "https://dev-app.seedao.top/pay/cancel"
+
+feishu:
+  app_id: "cli_xxxxxxxx"
+  bind_token_ttl_seconds: 600
+  bind_code_ttl_seconds: 600
+  bind_url_template: "https://dev-app.seedao.top/profile/bind?token={token}"
+
+internal:
+  service_token: "dev-service-token-change-me"

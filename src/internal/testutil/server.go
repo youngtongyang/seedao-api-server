@@ -82,6 +82,15 @@ func NewTestServer(t *testing.T) *TestServer {
 			DefaultPublicitySeconds:    60,
 			DefaultVoteDurationSeconds: 120,
 		},
+		Feishu: config.FeishuConfig{
+			AppID:              "cli_test_app",
+			BindTokenTTLSeconds: 600,
+			BindCodeTTLSeconds:  600,
+			BindURLTemplate:    "https://www.seedao.xyz/profile/bind?token={token}",
+		},
+		Internal: config.InternalConfig{
+			ServiceToken: "test-service-token",
+		},
 	}
 
 	redis := redisstore.New(cfg.Redis)

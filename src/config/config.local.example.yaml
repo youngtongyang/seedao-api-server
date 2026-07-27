@@ -67,3 +67,12 @@ governance:
   node_voter_sns: []
   default_publicity_seconds: 432000
   default_vote_duration_seconds: 172800
+
+feishu:
+  app_id: "cli_xxxxxxxx"
+  bind_token_ttl_seconds: 600
+  bind_code_ttl_seconds: 600
+  bind_url_template: "https://www.seedao.xyz/profile/bind?token={token}"
+
+internal:
+  service_token: "local-dev-service-token-change-me"

@@ -30,6 +30,10 @@ const (
 	ProposalNotVoter         = 40025
 	ProposalSNSRequired      = 40026
 	ProposalVoteNotFound     = 40027
+	FeishuNotBound           = 40040
+	FeishuAlreadyBound       = 40041
+	FeishuOpenIDTaken        = 40042
+	FeishuBindCredentialInvalid = 40043
 	InternalError       = 50000
 )
 
@@ -63,6 +67,10 @@ var messages = map[int]string{
 	ProposalNotVoter:         "not eligible to vote",
 	ProposalSNSRequired:      "sns required for governance action",
 	ProposalVoteNotFound:     "vote not found for this proposal",
+	FeishuNotBound:           "feishu not bound",
+	FeishuAlreadyBound:       "feishu already bound",
+	FeishuOpenIDTaken:        "feishu account already bound to another user",
+	FeishuBindCredentialInvalid: "feishu bind token or code invalid or expired",
 	InternalError:      "internal server error",
 }
 
