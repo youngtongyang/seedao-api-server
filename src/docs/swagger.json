@@ -1,7 +1,7 @@
 {
     "swagger": "2.0",
     "info": {
-        "description": "SeeDAO 后端 API（认证、支付、课程、治理提案等）",
+        "description": "SeeDAO 后端 API（认证、支付、课程、治理提案、飞书绑定等）",
         "title": "SeeDAO API Server",
         "contact": {},
         "version": "2.7"
@@ -21,6 +21,162 @@
                 "responses": {
                     "200": {
                         "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/internal/v1/feishu/bindings/confirm": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "internal"
+                ],
+                "summary": "土地神确认飞书 bind_code 绑定",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "service token",
+                        "name": "X-Service-Token",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "bind code",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.internalConfirmFeishuRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/internal/v1/feishu/bindings/token": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "internal"
+                ],
+                "summary": "土地神创建飞书 bind_token",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "service token",
+                        "name": "X-Service-Token",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "open id",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.internalCreateFeishuTokenRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/internal/v1/feishu/bindings/unbind": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "internal"
+                ],
+                "summary": "土地神按 open_id 解绑飞书",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "service token",
+                        "name": "X-Service-Token",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "description": "open id",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.internalUnbindFeishuRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope"
                         }
@@ -379,6 +535,77 @@
                 }
             }
         },
+        "/v1/governance/proposal-permissions": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "根据 governance 白名单返回当前登录 SNS 能否创建各类提案（与 POST /v1/proposals 鉴权一致）",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "proposals"
+                ],
+                "summary": "查询当前用户可创建的提案类型",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/github_com_seedao_seedao-api-server_internal_service.ProposalCreatePermissionsResult"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/payments/alipay/notify": {
+            "post": {
+                "consumes": [
+                    "application/x-www-form-urlencoded"
+                ],
+                "produces": [
+                    "text/plain"
+                ],
+                "tags": [
+                    "payments"
+                ],
+                "summary": "支付宝支付回调（支付宝服务器调用）",
+                "responses": {
+                    "200": {
+                        "description": "success",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/payments/coupons/preview": {
             "post": {
                 "security": [
@@ -632,7 +859,7 @@
                     },
                     {
                         "type": "integer",
-                        "description": "游标：返回 id 小于此值的记录",
+                        "description": "游标：传入上一页最后一条的 id，返回更早创建的记录",
                         "name": "before_id",
                         "in": "query"
                     },
@@ -737,7 +964,7 @@
                 "parameters": [
                     {
                         "type": "integer",
-                        "description": "提案 ID",
+                        "description": "提案 ID（兼容 legacy_id 查询）",
                         "name": "id",
                         "in": "path",
                         "required": true
@@ -1261,6 +1488,46 @@
                 }
             }
         },
+        "/v1/sns/by-wallet": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "sns"
+                ],
+                "summary": "根据钱包地址查询 SNS 名称",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "钱包地址",
+                        "name": "wallet",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/github_com_seedao_seedao-api-server_internal_service.WalletSNSLookupResult"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    }
+                }
+            }
+        },
         "/v1/sns/check": {
             "get": {
                 "produces": [
@@ -1301,6 +1568,158 @@
                 "responses": {
                     "200": {
                         "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/user/bindings": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "查询第三方账号绑定状态",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/user/bindings/feishu": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "解绑飞书账号",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/user/bindings/feishu/challenge": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "生成飞书绑定验证码（官网 → 飞书路径）",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope"
+                        }
+                    }
+                }
+            }
+        },
+        "/v1/user/bindings/feishu/token": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "使用土地神 bind_token 绑定飞书",
+                "parameters": [
+                    {
+                        "description": "bind token",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/internal_handler.bindFeishuTokenRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope"
                         }
@@ -1480,6 +1899,29 @@
                 "parent_id": {
                     "type": "integer"
                 },
+                "replies": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_seedao_seedao-api-server_internal_service.ProposalCommentItem"
+                    }
+                },
+                "sns_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_seedao_seedao-api-server_internal_service.ProposalCreatePermissionsResult": {
+            "type": "object",
+            "properties": {
+                "can_create_any": {
+                    "type": "boolean"
+                },
+                "create_types": {
+                    "type": "object",
+                    "additionalProperties": {
+                        "type": "boolean"
+                    }
+                },
                 "sns_name": {
                     "type": "string"
                 }
@@ -1523,6 +1965,9 @@
                 },
                 "resolution_rule": {
                     "type": "string"
+                },
+                "sip": {
+                    "type": "integer"
                 },
                 "status": {
                     "type": "string"
@@ -1582,6 +2027,9 @@
                 },
                 "published_at": {
                     "type": "string"
+                },
+                "sip": {
+                    "type": "integer"
                 },
                 "status": {
                     "type": "string"
@@ -1646,6 +2094,9 @@
                 },
                 "resolution_rule": {
                     "type": "string"
+                },
+                "sip": {
+                    "type": "integer"
                 },
                 "status": {
                     "type": "string"
@@ -1740,6 +2191,25 @@
                 },
                 "valid_votes": {
                     "type": "integer"
+                }
+            }
+        },
+        "github_com_seedao_seedao-api-server_internal_service.WalletSNSLookupResult": {
+            "type": "object",
+            "properties": {
+                "sns_name": {
+                    "type": "string"
+                },
+                "wallet": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_handler.bindFeishuTokenRequest": {
+            "type": "object",
+            "properties": {
+                "bind_token": {
+                    "type": "string"
                 }
             }
         },
@@ -1847,6 +2317,63 @@
                 },
                 "type": {
                     "type": "string"
+                },
+                "vote_options": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "vote_type": {
+                    "type": "integer"
+                }
+            }
+        },
+        "internal_handler.internalConfirmFeishuRequest": {
+            "type": "object",
+            "properties": {
+                "bind_code": {
+                    "type": "string"
+                },
+                "display_name": {
+                    "type": "string"
+                },
+                "open_id": {
+                    "type": "string"
+                },
+                "provider_app_id": {
+                    "type": "string"
+                },
+                "union_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_handler.internalCreateFeishuTokenRequest": {
+            "type": "object",
+            "properties": {
+                "display_name": {
+                    "type": "string"
+                },
+                "open_id": {
+                    "type": "string"
+                },
+                "provider_app_id": {
+                    "type": "string"
+                },
+                "union_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_handler.internalUnbindFeishuRequest": {
+            "type": "object",
+            "properties": {
+                "open_id": {
+                    "type": "string"
+                },
+                "provider_app_id": {
+                    "type": "string"
                 }
             }
         },
@@ -1953,6 +2480,15 @@
                 },
                 "title": {
                     "type": "string"
+                },
+                "vote_options": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "vote_type": {
+                    "type": "integer"
                 }
             }
         },
@@ -2018,7 +2554,7 @@
             "name": "stats"
         },
         {
-            "description": "用户 /v1/user",
+            "description": "用户 /v1/user（含飞书绑定）",
             "name": "user"
         },
         {
@@ -2032,6 +2568,10 @@
         {
             "description": "提案 /v1/proposals",
             "name": "proposals"
+        },
+        {
+            "description": "内部服务间接口 /internal/v1（土地神等，X-Service-Token）",
+            "name": "internal"
         }
     ]
 }
