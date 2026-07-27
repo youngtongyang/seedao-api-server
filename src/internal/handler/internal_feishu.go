@@ -30,6 +30,11 @@ type internalConfirmFeishuRequest struct {
 	DisplayName   string `json:"display_name"`
 }
 
+type internalUnbindFeishuRequest struct {
+	OpenID        string `json:"open_id"`
+	ProviderAppID string `json:"provider_app_id"`
+}
+
 // CreateBindToken godoc
 // @Summary      土地神创建飞书 bind_token
 // @Tags         internal
@@ -82,6 +87,33 @@ func (h *InternalFeishuHandler) ConfirmBinding(c echo.Context) error {
 		UnionID:       req.UnionID,
 		ProviderAppID: req.ProviderAppID,
 		DisplayName:   req.DisplayName,
+	})
+	if err != nil {
+		return mapServiceError(c, err)
+	}
+	return response.OK(c, result)
+}
+
+// UnbindBinding godoc
+// @Summary      土地神按 open_id 解绑飞书
+// @Tags         internal
+// @Accept       json
+// @Produce      json
+// @Param        X-Service-Token  header  string  true  "service token"
+// @Param        body  body  internalUnbindFeishuRequest  true  "open id"
+// @Success      200   {object}  response.Envelope
+// @Failure      400   {object}  response.Envelope
+// @Failure      401   {object}  response.Envelope
+// @Router       /internal/v1/feishu/bindings/unbind [post]
+func (h *InternalFeishuHandler) UnbindBinding(c echo.Context) error {
+	var req internalUnbindFeishuRequest
+	if err := c.Bind(&req); err != nil {
+		return mapServiceError(c, service.ErrInvalidParam)
+	}
+
+	result, err := h.bindings.UnbindFeishuByOpenID(c.Request().Context(), service.FeishuUnbindByOpenIDInput{
+		OpenID:        req.OpenID,
+		ProviderAppID: req.ProviderAppID,
 	})
 	if err != nil {
 		return mapServiceError(c, err)

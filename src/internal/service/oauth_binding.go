@@ -84,6 +84,17 @@ type FeishuConfirmResult struct {
 	BindSource string `json:"bind_source"`
 }
 
+type FeishuUnbindByOpenIDInput struct {
+	OpenID        string
+	ProviderAppID string
+}
+
+type FeishuUnbindByOpenIDResult struct {
+	UserID  int64  `json:"user_id"`
+	SNSName string `json:"sns_name,omitempty"`
+	Bound   bool   `json:"bound"`
+}
+
 func (s *OAuthBindingService) ListByUserID(ctx context.Context, userID int64) (*BindingListResult, error) {
 	item := BindingItem{
 		Provider: model.OAuthProviderFeishu,
@@ -273,6 +284,46 @@ func (s *OAuthBindingService) UnbindFeishu(ctx context.Context, userID int64) (*
 	}, nil
 }
 
+func (s *OAuthBindingService) UnbindFeishuByOpenID(ctx context.Context, input FeishuUnbindByOpenIDInput) (*FeishuUnbindByOpenIDResult, error) {
+	_ = ctx
+	openID := strings.TrimSpace(input.OpenID)
+	if openID == "" {
+		return nil, ErrInvalidParam
+	}
+
+	appID := strings.TrimSpace(input.ProviderAppID)
+	if appID == "" {
+		appID = strings.TrimSpace(s.feishu.AppID)
+	}
+	if appID == "" {
+		return nil, ErrInvalidParam
+	}
+
+	binding, err := s.getActiveFeishuBindingByOpenID(appID, openID)
+	if err != nil {
+		return nil, err
+	}
+	if binding == nil {
+		return nil, ErrFeishuNotBound
+	}
+
+	result := &FeishuUnbindByOpenIDResult{
+		UserID: binding.UserID,
+		Bound:  false,
+	}
+
+	var sns model.SNSName
+	if err := s.db.Where("user_id = ?", binding.UserID).First(&sns).Error; err == nil {
+		result.SNSName = sns.Name
+	}
+
+	if err := s.db.Delete(binding).Error; err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
 type feishuBindingInput struct {
 	ProviderAppID string
 	OpenID        string
@@ -334,6 +385,21 @@ func (s *OAuthBindingService) createFeishuBinding(ctx context.Context, userID in
 func (s *OAuthBindingService) getActiveFeishuBinding(userID int64) (*model.UserOAuthBinding, error) {
 	var binding model.UserOAuthBinding
 	err := s.db.Where("user_id = ? AND provider = ?", userID, model.OAuthProviderFeishu).First(&binding).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &binding, nil
+}
+
+func (s *OAuthBindingService) getActiveFeishuBindingByOpenID(providerAppID, openID string) (*model.UserOAuthBinding, error) {
+	var binding model.UserOAuthBinding
+	err := s.db.Where(
+		"provider = ? AND provider_app_id = ? AND open_id = ?",
+		model.OAuthProviderFeishu, providerAppID, openID,
+	).First(&binding).Error
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, nil
 	}

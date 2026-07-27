@@ -128,6 +128,42 @@ func TestBindings_UnbindFeishu(t *testing.T) {
 	assert.Equal(t, false, unbindData["bound"])
 }
 
+func TestBindings_UnbindFeishuByOpenID(t *testing.T) {
+	ts := testutil.NewTestServer(t)
+	token := ts.RegisterAndToken(t, "+8613800138008", "bindtest8.seedao")
+
+	createRec := testutil.DoJSON(t, ts.Echo, http.MethodPost, "/internal/v1/feishu/bindings/token", map[string]string{
+		"open_id": "ou_bot_unbind",
+	}, map[string]string{"X-Service-Token": "test-service-token"})
+	createData := testutil.ParseData[map[string]interface{}](t, testutil.ParseResponse(t, createRec).Data)
+	testutil.DoJSON(t, ts.Echo, http.MethodPost, "/v1/user/bindings/feishu/token", map[string]string{
+		"bind_token": createData["bind_token"].(string),
+	}, map[string]string{"Authorization": "Bearer " + token})
+
+	unbindRec := testutil.DoJSON(t, ts.Echo, http.MethodPost, "/internal/v1/feishu/bindings/unbind", map[string]string{
+		"open_id": "ou_bot_unbind",
+	}, map[string]string{"X-Service-Token": "test-service-token"})
+	unbindData := testutil.ParseData[map[string]interface{}](t, testutil.ParseResponse(t, unbindRec).Data)
+	assert.Equal(t, false, unbindData["bound"])
+	assert.Equal(t, "bindtest8.seedao", unbindData["sns_name"])
+
+	listRec := testutil.DoJSON(t, ts.Echo, http.MethodGet, "/v1/user/bindings", nil, map[string]string{
+		"Authorization": "Bearer " + token,
+	})
+	listData := testutil.ParseData[map[string][]map[string]interface{}](t, testutil.ParseResponse(t, listRec).Data)
+	assert.Equal(t, false, listData["items"][0]["bound"])
+}
+
+func TestBindings_UnbindFeishuByOpenID_NotBound(t *testing.T) {
+	ts := testutil.NewTestServer(t)
+
+	rec := testutil.DoJSON(t, ts.Echo, http.MethodPost, "/internal/v1/feishu/bindings/unbind", map[string]string{
+		"open_id": "ou_nobody",
+	}, map[string]string{"X-Service-Token": "test-service-token"})
+	resp := testutil.ParseErrorResponse(t, rec)
+	assert.Equal(t, errcode.FeishuNotBound, resp.Code)
+}
+
 func TestBindings_OpenIDTaken(t *testing.T) {
 	ts := testutil.NewTestServer(t)
 	token1 := ts.RegisterAndToken(t, "+8613800138006", "bindtest6.seedao")

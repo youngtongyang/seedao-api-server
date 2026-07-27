@@ -47,6 +47,7 @@ SeeDAO 会员与飞书 `open_id` 的绑定模块。不使用飞书 OAuth，通�
 |------|------|------|
 | POST | `/internal/v1/feishu/bindings/token` | 路径 A：用户 `@土地神 绑定` 时创建 `bind_token` |
 | POST | `/internal/v1/feishu/bindings/confirm` | 路径 B：用户发送 `绑定 {code}` 时确认绑定 |
+| POST | `/internal/v1/feishu/bindings/unbind` | 用户 `@土地神 解绑` 时按 `open_id` 解绑 |
 
 配置项见 `config.*.yaml` 的 `feishu` 与 `internal.service_token`。
 
@@ -104,7 +105,9 @@ sequenceDiagram
 
 ## 解绑
 
-仅在官网 Profile 操作，不经过飞书。
+支持官网 Profile 与飞书 `@土地神` 两种入口，最终都是软删同一张绑定表。
+
+### 官网解绑
 
 ```mermaid
 sequenceDiagram
@@ -117,6 +120,23 @@ sequenceDiagram
   API->>API: 软删 user_oauth_bindings
   API-->>FE: { bound: false }
 ```
+
+### 土地神解绑
+
+```mermaid
+sequenceDiagram
+  actor U as 用户
+  participant Bot as 土地神
+  participant API as seedao-api-server
+
+  U->>Bot: @土地神 解绑
+  Bot->>API: POST /internal/v1/feishu/bindings/unbind<br/>{ open_id }
+  API->>API: 按 open_id 软删绑定
+  API-->>Bot: { user_id, sns_name, bound: false }
+  Bot->>U: 已解除与 xxx.seedao 的绑定
+```
+
+> 产品侧可做成两步确认（先提示「确认请发送：确认解绑」），本 API 只负责执行解绑。
 
 ## 请求/响应示例
 
@@ -201,6 +221,20 @@ sequenceDiagram
   "sns_name": "alice.seedao",
   "bound": true,
   "bind_source": "bot_code"
+}
+```
+
+### POST /internal/v1/feishu/bindings/unbind
+
+```json
+// request
+{ "open_id": "ou_xxx" }
+
+// response
+{
+  "user_id": 123,
+  "sns_name": "alice.seedao",
+  "bound": false
 }
 ```
 

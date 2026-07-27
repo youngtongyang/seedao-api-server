@@ -145,6 +145,7 @@ func NewEcho(cfg *config.Config, db *gorm.DB, redis *redisstore.Store) (*echo.Ec
 	internal := e.Group("/internal/v1", middleware.ServiceToken(cfg.Internal.ServiceToken))
 	internal.POST("/feishu/bindings/token", internalFeishuHandler.CreateBindToken)
 	internal.POST("/feishu/bindings/confirm", internalFeishuHandler.ConfirmBinding)
+	internal.POST("/feishu/bindings/unbind", internalFeishuHandler.UnbindBinding)
 
 	return e, nil
 }
