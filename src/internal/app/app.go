@@ -69,6 +69,7 @@ func NewEcho(cfg *config.Config, db *gorm.DB, redis *redisstore.Store) (*echo.Ec
 	courseSvc := service.NewCourseService(db, wxClient, alipayClient, cfg.Membership, payDevMode)
 	paymentSvc := service.NewPaymentService(db, redis, wxClient, alipayClient, cfg.Membership, payDevMode, couponSvc, courseSvc)
 	proposalSvc := service.NewProposalService(db, snsSvc, cfg.Governance)
+	oauthBindingSvc := service.NewOAuthBindingService(db, redis, cfg.Feishu)
 
 	authHandler := handler.NewAuthHandler(authSvc, smsSvc)
 	snsHandler := handler.NewSNSHandler(snsSvc)
@@ -79,6 +80,8 @@ func NewEcho(cfg *config.Config, db *gorm.DB, redis *redisstore.Store) (*echo.Ec
 	paymentHandler := handler.NewPaymentHandler(paymentSvc, payDevMode)
 	courseHandler := handler.NewCourseHandler(courseSvc, paymentSvc, payDevMode)
 	proposalHandler := handler.NewProposalHandler(proposalSvc, profileSvc)
+	bindingsHandler := handler.NewBindingsHandler(oauthBindingSvc)
+	internalFeishuHandler := handler.NewInternalFeishuHandler(oauthBindingSvc)
 
 	e := echo.New()
 	e.HideBanner = true
@@ -101,6 +104,10 @@ func NewEcho(cfg *config.Config, db *gorm.DB, redis *redisstore.Store) (*echo.Ec
 	v1.POST("/wallet/verify-sns", walletHandler.VerifySNS)
 	v1.GET("/stats/user-count", statsHandler.UserCount)
 	v1.GET("/user/profile", profileHandler.Get, middleware.JWT(jwtMgr))
+	v1.GET("/user/bindings", bindingsHandler.List, middleware.JWT(jwtMgr))
+	v1.POST("/user/bindings/feishu/token", bindingsHandler.BindFeishuToken, middleware.JWT(jwtMgr))
+	v1.POST("/user/bindings/feishu/challenge", bindingsHandler.CreateFeishuChallenge, middleware.JWT(jwtMgr))
+	v1.DELETE("/user/bindings/feishu", bindingsHandler.UnbindFeishu, middleware.JWT(jwtMgr))
 	v1.POST("/user/membership/renew", membershipHandler.Renew, middleware.JWT(jwtMgr))
 	v1.POST("/payments/coupons/preview", paymentHandler.PreviewCoupon, middleware.OptionalJWT(jwtMgr))
 	v1.POST("/payments/orders", paymentHandler.CreateOrder, middleware.JWT(jwtMgr))
@@ -134,6 +141,10 @@ func NewEcho(cfg *config.Config, db *gorm.DB, redis *redisstore.Store) (*echo.Ec
 	v1.POST("/proposals/:id/finalize", proposalHandler.Finalize, middleware.JWT(jwtMgr))
 	v1.POST("/proposals/:id/votes", proposalHandler.CastVote, middleware.JWT(jwtMgr))
 	v1.POST("/proposals/:id/comments", proposalHandler.CreateComment, middleware.JWT(jwtMgr))
+
+	internal := e.Group("/internal/v1", middleware.ServiceToken(cfg.Internal.ServiceToken))
+	internal.POST("/feishu/bindings/token", internalFeishuHandler.CreateBindToken)
+	internal.POST("/feishu/bindings/confirm", internalFeishuHandler.ConfirmBinding)
 
 	return e, nil
 }

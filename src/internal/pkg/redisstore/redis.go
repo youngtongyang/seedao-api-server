@@ -2,6 +2,7 @@ package redisstore
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -104,4 +105,63 @@ func (s *Store) TryPaymentNotifyLock(ctx context.Context, orderNo string, ttl ti
 
 func (s *Store) ReleasePaymentNotifyLock(ctx context.Context, orderNo string) error {
 	return s.client.Del(ctx, "payment:notify:lock:"+orderNo).Err()
+}
+
+type FeishuBindTokenPayload struct {
+	OpenID        string `json:"open_id"`
+	UnionID       string `json:"union_id,omitempty"`
+	ProviderAppID string `json:"provider_app_id"`
+	DisplayName   string `json:"display_name,omitempty"`
+}
+
+type FeishuBindCodePayload struct {
+	UserID int64 `json:"user_id"`
+}
+
+func (s *Store) SetFeishuBindToken(ctx context.Context, token string, payload FeishuBindTokenPayload, ttl time.Duration) error {
+	data, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+	return s.client.Set(ctx, "feishu:bind_token:"+token, data, ttl).Err()
+}
+
+func (s *Store) ConsumeFeishuBindToken(ctx context.Context, token string) (*FeishuBindTokenPayload, error) {
+	key := "feishu:bind_token:" + token
+	data, err := s.client.GetDel(ctx, key).Bytes()
+	if err == redis.Nil {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	var payload FeishuBindTokenPayload
+	if err := json.Unmarshal(data, &payload); err != nil {
+		return nil, err
+	}
+	return &payload, nil
+}
+
+func (s *Store) SetFeishuBindCode(ctx context.Context, code string, payload FeishuBindCodePayload, ttl time.Duration) error {
+	data, err := json.Marshal(payload)
+	if err != nil {
+		return err
+	}
+	return s.client.Set(ctx, "feishu:bind_code:"+code, data, ttl).Err()
+}
+
+func (s *Store) ConsumeFeishuBindCode(ctx context.Context, code string) (*FeishuBindCodePayload, error) {
+	key := "feishu:bind_code:" + code
+	data, err := s.client.GetDel(ctx, key).Bytes()
+	if err == redis.Nil {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	var payload FeishuBindCodePayload
+	if err := json.Unmarshal(data, &payload); err != nil {
+		return nil, err
+	}
+	return &payload, nil
 }

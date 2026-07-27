@@ -64,3 +64,12 @@ alipay:
   quit_url: "https://seedao.xyz/pay/cancel"
 
 # governance 白名单仅写在 ECS config.prod.yaml，勿提交 Git（见 docs/OPERATIONS.md）
+
+feishu:
+  app_id: "cli_xxxxxxxx"
+  bind_token_ttl_seconds: 600
+  bind_code_ttl_seconds: 600
+  bind_url_template: "https://www.seedao.xyz/profile/bind?token={token}"
+
+internal:
+  service_token: "CHANGE_ME_SHARED_SECRET_WITH_TUDISHEN"

@@ -53,6 +53,11 @@ const (
 
 	CourseEnrollmentActive = "active"
 
+	OAuthProviderFeishu = "feishu"
+
+	OAuthBindSourceBotToken = "bot_token"
+	OAuthBindSourceBotCode  = "bot_code"
+
 	MinPaymentAmountFen = 1
 )
 
@@ -257,3 +262,20 @@ type CourseEnrollment struct {
 }
 
 func (CourseEnrollment) TableName() string { return "course_enrollments" }
+
+type UserOAuthBinding struct {
+	ID            int64          `gorm:"primaryKey"`
+	UserID        int64          `gorm:"not null;index"`
+	Provider      string         `gorm:"size:32;not null"`
+	ProviderAppID string         `gorm:"size:64;not null"`
+	OpenID        string         `gorm:"size:128;not null"`
+	UnionID       *string        `gorm:"size:128"`
+	DisplayName   string         `gorm:"size:128;not null;default:''"`
+	BindSource    string         `gorm:"size:32;not null"`
+	BoundAt       time.Time      `gorm:"not null"`
+	CreatedAt     time.Time      `gorm:"not null"`
+	UpdatedAt     time.Time      `gorm:"not null"`
+	DeletedAt     gorm.DeletedAt `gorm:"index"`
+}
+
+func (UserOAuthBinding) TableName() string { return "user_oauth_bindings" }

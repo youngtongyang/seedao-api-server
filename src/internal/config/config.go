@@ -18,6 +18,8 @@ type Config struct {
 	WechatPay  WechatPayConfig  `yaml:"wechat_pay"`
 	Alipay     AlipayConfig     `yaml:"alipay"`
 	Governance GovernanceConfig `yaml:"governance"`
+	Feishu     FeishuConfig     `yaml:"feishu"`
+	Internal   InternalConfig   `yaml:"internal"`
 }
 
 type ServerConfig struct {
@@ -84,6 +86,17 @@ type WechatPayConfig struct {
 	H5ReturnURL         string `yaml:"h5_return_url"`
 }
 
+type FeishuConfig struct {
+	AppID              string `yaml:"app_id"`
+	BindTokenTTLSeconds int   `yaml:"bind_token_ttl_seconds"`
+	BindCodeTTLSeconds  int   `yaml:"bind_code_ttl_seconds"`
+	BindURLTemplate    string `yaml:"bind_url_template"`
+}
+
+type InternalConfig struct {
+	ServiceToken string `yaml:"service_token"`
+}
+
 type GovernanceConfig struct {
 	QuarterNodeTotal           int      `yaml:"quarter_node_total"`
 	HallProposalSNS            []string `yaml:"hall_proposal_sns"`
@@ -143,6 +156,15 @@ func Load(path string) (*Config, error) {
 	}
 	if cfg.Governance.DefaultVoteDurationSeconds == 0 {
 		cfg.Governance.DefaultVoteDurationSeconds = 172800
+	}
+	if cfg.Feishu.BindTokenTTLSeconds == 0 {
+		cfg.Feishu.BindTokenTTLSeconds = 600
+	}
+	if cfg.Feishu.BindCodeTTLSeconds == 0 {
+		cfg.Feishu.BindCodeTTLSeconds = 600
+	}
+	if cfg.Feishu.BindURLTemplate == "" {
+		cfg.Feishu.BindURLTemplate = "https://www.seedao.xyz/profile/bind?token={token}"
 	}
 
 	return &cfg, nil

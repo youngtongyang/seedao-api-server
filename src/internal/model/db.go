@@ -50,5 +50,6 @@ func AutoMigrate(db *gorm.DB) error {
 		&Proposal{},
 		&ProposalVote{},
 		&ProposalComment{},
+		&UserOAuthBinding{},
 	)
 }
