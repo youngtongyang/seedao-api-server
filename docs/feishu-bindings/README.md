@@ -47,6 +47,7 @@ SeeDAO 会员与飞书 `open_id` 的绑定模块。不使用飞书 OAuth，通�
 |------|------|------|
 | POST | `/internal/v1/feishu/bindings/token` | 路径 A：用户 `@土地神 绑定` 时创建 `bind_token` |
 | POST | `/internal/v1/feishu/bindings/confirm` | 路径 B：用户发送 `绑定 {code}` 时确认绑定 |
+| GET | `/internal/v1/feishu/bindings` | 按 `open_id` 查询是否已绑定（及 SNS） |
 | POST | `/internal/v1/feishu/bindings/unbind` | 用户 `@土地神 解绑` 时按 `open_id` 解绑 |
 
 配置项见 `config.*.yaml` 的 `feishu` 与 `internal.service_token`。
@@ -137,6 +138,17 @@ sequenceDiagram
 ```
 
 > 产品侧可做成两步确认（先提示「确认请发送：确认解绑」），本 API 只负责执行解绑。
+
+## 土地神查询绑定状态
+
+路径 A 用户点链接回官网完成后，土地神可用 `open_id` 轮询/主动查询是否已绑定：
+
+```bash
+curl -s "https://api.seedao.xyz/internal/v1/feishu/bindings?open_id=ou_xxx" \
+  -H "X-Service-Token: <service_token>"
+```
+
+未绑定返回 `{"bound":false}`（HTTP 200，不当错误）；已绑定带 `sns_name` 等字段，便于 bot 回复确认。
 
 ## 请求/响应示例
 
@@ -234,6 +246,25 @@ sequenceDiagram
 {
   "user_id": 123,
   "sns_name": "alice.seedao",
+  "bound": false
+}
+```
+
+### GET /internal/v1/feishu/bindings?open_id=ou_xxx
+
+```json
+// 已绑定
+{
+  "bound": true,
+  "user_id": 123,
+  "sns_name": "alice.seedao",
+  "display_name": "张三",
+  "bound_at": "2026-07-28T02:00:00Z",
+  "bind_source": "bot_token"
+}
+
+// 未绑定
+{
   "bound": false
 }
 ```

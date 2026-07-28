@@ -143,6 +143,7 @@ func NewEcho(cfg *config.Config, db *gorm.DB, redis *redisstore.Store) (*echo.Ec
 	v1.POST("/proposals/:id/comments", proposalHandler.CreateComment, middleware.JWT(jwtMgr))
 
 	internal := e.Group("/internal/v1", middleware.ServiceToken(cfg.Internal.ServiceToken))
+	internal.GET("/feishu/bindings", internalFeishuHandler.LookupBinding)
 	internal.POST("/feishu/bindings/token", internalFeishuHandler.CreateBindToken)
 	internal.POST("/feishu/bindings/confirm", internalFeishuHandler.ConfirmBinding)
 	internal.POST("/feishu/bindings/unbind", internalFeishuHandler.UnbindBinding)

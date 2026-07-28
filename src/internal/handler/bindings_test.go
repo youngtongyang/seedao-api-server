@@ -164,6 +164,45 @@ func TestBindings_UnbindFeishuByOpenID_NotBound(t *testing.T) {
 	assert.Equal(t, errcode.FeishuNotBound, resp.Code)
 }
 
+func TestBindings_LookupFeishuByOpenID(t *testing.T) {
+	ts := testutil.NewTestServer(t)
+	token := ts.RegisterAndToken(t, "+8613800138009", "bindtest9.seedao")
+
+	unboundRec := testutil.DoJSON(t, ts.Echo, http.MethodGet, "/internal/v1/feishu/bindings?open_id=ou_lookup", nil, map[string]string{
+		"X-Service-Token": "test-service-token",
+	})
+	unboundData := testutil.ParseData[map[string]interface{}](t, testutil.ParseResponse(t, unboundRec).Data)
+	assert.Equal(t, false, unboundData["bound"])
+
+	createRec := testutil.DoJSON(t, ts.Echo, http.MethodPost, "/internal/v1/feishu/bindings/token", map[string]string{
+		"open_id":      "ou_lookup",
+		"display_name": "LookupUser",
+	}, map[string]string{"X-Service-Token": "test-service-token"})
+	createData := testutil.ParseData[map[string]interface{}](t, testutil.ParseResponse(t, createRec).Data)
+	testutil.DoJSON(t, ts.Echo, http.MethodPost, "/v1/user/bindings/feishu/token", map[string]string{
+		"bind_token": createData["bind_token"].(string),
+	}, map[string]string{"Authorization": "Bearer " + token})
+
+	boundRec := testutil.DoJSON(t, ts.Echo, http.MethodGet, "/internal/v1/feishu/bindings?open_id=ou_lookup", nil, map[string]string{
+		"X-Service-Token": "test-service-token",
+	})
+	boundData := testutil.ParseData[map[string]interface{}](t, testutil.ParseResponse(t, boundRec).Data)
+	assert.Equal(t, true, boundData["bound"])
+	assert.Equal(t, "bindtest9.seedao", boundData["sns_name"])
+	assert.Equal(t, "LookupUser", boundData["display_name"])
+	assert.Equal(t, model.OAuthBindSourceBotToken, boundData["bind_source"])
+}
+
+func TestBindings_LookupFeishuByOpenID_MissingOpenID(t *testing.T) {
+	ts := testutil.NewTestServer(t)
+
+	rec := testutil.DoJSON(t, ts.Echo, http.MethodGet, "/internal/v1/feishu/bindings", nil, map[string]string{
+		"X-Service-Token": "test-service-token",
+	})
+	resp := testutil.ParseErrorResponse(t, rec)
+	assert.Equal(t, errcode.InvalidParam, resp.Code)
+}
+
 func TestBindings_OpenIDTaken(t *testing.T) {
 	ts := testutil.NewTestServer(t)
 	token1 := ts.RegisterAndToken(t, "+8613800138006", "bindtest6.seedao")

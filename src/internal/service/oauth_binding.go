@@ -95,6 +95,20 @@ type FeishuUnbindByOpenIDResult struct {
 	Bound   bool   `json:"bound"`
 }
 
+type FeishuLookupByOpenIDInput struct {
+	OpenID        string
+	ProviderAppID string
+}
+
+type FeishuLookupByOpenIDResult struct {
+	Bound       bool   `json:"bound"`
+	UserID      int64  `json:"user_id,omitempty"`
+	SNSName     string `json:"sns_name,omitempty"`
+	DisplayName string `json:"display_name,omitempty"`
+	BoundAt     string `json:"bound_at,omitempty"`
+	BindSource  string `json:"bind_source,omitempty"`
+}
+
 func (s *OAuthBindingService) ListByUserID(ctx context.Context, userID int64) (*BindingListResult, error) {
 	item := BindingItem{
 		Provider: model.OAuthProviderFeishu,
@@ -319,6 +333,45 @@ func (s *OAuthBindingService) UnbindFeishuByOpenID(ctx context.Context, input Fe
 
 	if err := s.db.Delete(binding).Error; err != nil {
 		return nil, err
+	}
+
+	return result, nil
+}
+
+func (s *OAuthBindingService) LookupFeishuByOpenID(ctx context.Context, input FeishuLookupByOpenIDInput) (*FeishuLookupByOpenIDResult, error) {
+	_ = ctx
+	openID := strings.TrimSpace(input.OpenID)
+	if openID == "" {
+		return nil, ErrInvalidParam
+	}
+
+	appID := strings.TrimSpace(input.ProviderAppID)
+	if appID == "" {
+		appID = strings.TrimSpace(s.feishu.AppID)
+	}
+	if appID == "" {
+		return nil, ErrInvalidParam
+	}
+
+	binding, err := s.getActiveFeishuBindingByOpenID(appID, openID)
+	if err != nil {
+		return nil, err
+	}
+	if binding == nil {
+		return &FeishuLookupByOpenIDResult{Bound: false}, nil
+	}
+
+	result := &FeishuLookupByOpenIDResult{
+		Bound:       true,
+		UserID:      binding.UserID,
+		DisplayName: binding.DisplayName,
+		BoundAt:     binding.BoundAt.UTC().Format(time.RFC3339),
+		BindSource:  binding.BindSource,
+	}
+
+	var sns model.SNSName
+	if err := s.db.Where("user_id = ?", binding.UserID).First(&sns).Error; err == nil {
+		result.SNSName = sns.Name
 	}
 
 	return result, nil

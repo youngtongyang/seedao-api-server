@@ -120,3 +120,25 @@ func (h *InternalFeishuHandler) UnbindBinding(c echo.Context) error {
 	}
 	return response.OK(c, result)
 }
+
+// LookupBinding godoc
+// @Summary      土地神按 open_id 查询飞书绑定状态
+// @Tags         internal
+// @Produce      json
+// @Param        X-Service-Token  header  string  true  "service token"
+// @Param        open_id  query  string  true  "飞书 open_id"
+// @Param        provider_app_id  query  string  false  "飞书 App ID，缺省用服务端配置"
+// @Success      200   {object}  response.Envelope
+// @Failure      400   {object}  response.Envelope
+// @Failure      401   {object}  response.Envelope
+// @Router       /internal/v1/feishu/bindings [get]
+func (h *InternalFeishuHandler) LookupBinding(c echo.Context) error {
+	result, err := h.bindings.LookupFeishuByOpenID(c.Request().Context(), service.FeishuLookupByOpenIDInput{
+		OpenID:        c.QueryParam("open_id"),
+		ProviderAppID: c.QueryParam("provider_app_id"),
+	})
+	if err != nil {
+		return mapServiceError(c, err)
+	}
+	return response.OK(c, result)
+}
