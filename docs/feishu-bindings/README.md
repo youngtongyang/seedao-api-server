@@ -49,6 +49,7 @@ SeeDAO 会员与飞书 `open_id` 的绑定模块。不使用飞书 OAuth，通�
 | POST | `/internal/v1/feishu/bindings/confirm` | 路径 B：用户发送 `绑定 {code}` 时确认绑定 |
 | GET | `/internal/v1/feishu/bindings` | 按 `open_id` 查询是否已绑定（及 SNS） |
 | POST | `/internal/v1/feishu/bindings/unbind` | 用户 `@土地神 解绑` 时按 `open_id` 解绑 |
+| GET | `/internal/v1/members` | 分页拉取注册会员列表（SNS / 注册时间 / 会员到期） |
 
 配置项见 `config.*.yaml` 的 `feishu` 与 `internal.service_token`。
 
@@ -149,6 +150,48 @@ curl -s "https://api.seedao.xyz/internal/v1/feishu/bindings?open_id=ou_xxx" \
 ```
 
 未绑定返回 `{"bound":false}`（HTTP 200，不当错误）；已绑定带 `sns_name` 等字段，便于 bot 回复确认。
+
+## 土地神分页拉取会员列表
+
+```bash
+curl -s "https://api.seedao.xyz/internal/v1/members?page=1&page_size=20" \
+  -H "X-Service-Token: <service_token>"
+```
+
+| 参数 | 说明 |
+|------|------|
+| `page` | 页码，从 1 开始，默认 1 |
+| `page_size` | 每页条数，默认 20，最大 100 |
+| `sort_by` | 排序字段：`user_id` / `registered_at` / `membership_expires_at`，默认 `user_id` |
+| `order` | 排序方向：`asc` / `desc`，默认 `asc` |
+
+默认按 `user_id` 正序。非法 `sort_by` / `order` 会回落到默认值。响应示例：
+
+```json
+{
+  "page": 1,
+  "page_size": 20,
+  "total": 2,
+  "sort_by": "user_id",
+  "order": "asc",
+  "items": [
+    {
+      "user_id": 1,
+      "sns_name": "young.seedao",
+      "registered_at": "2026-07-27T08:53:09Z",
+      "membership_expires_at": "2028-12-31T15:59:59Z"
+    },
+    {
+      "user_id": 2,
+      "sns_name": "alice.seedao",
+      "registered_at": "2026-07-28T04:00:00Z",
+      "membership_expires_at": "2027-07-28T04:00:00Z"
+    }
+  ]
+}
+```
+
+`membership_expires_at` 为空字符串表示尚未开通/无到期时间。
 
 ## 请求/响应示例
 

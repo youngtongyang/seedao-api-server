@@ -70,6 +70,7 @@ func NewEcho(cfg *config.Config, db *gorm.DB, redis *redisstore.Store) (*echo.Ec
 	paymentSvc := service.NewPaymentService(db, redis, wxClient, alipayClient, cfg.Membership, payDevMode, couponSvc, courseSvc)
 	proposalSvc := service.NewProposalService(db, snsSvc, cfg.Governance)
 	oauthBindingSvc := service.NewOAuthBindingService(db, redis, cfg.Feishu)
+	memberListSvc := service.NewMemberListService(db)
 
 	authHandler := handler.NewAuthHandler(authSvc, smsSvc)
 	snsHandler := handler.NewSNSHandler(snsSvc)
@@ -82,6 +83,7 @@ func NewEcho(cfg *config.Config, db *gorm.DB, redis *redisstore.Store) (*echo.Ec
 	proposalHandler := handler.NewProposalHandler(proposalSvc, profileSvc)
 	bindingsHandler := handler.NewBindingsHandler(oauthBindingSvc)
 	internalFeishuHandler := handler.NewInternalFeishuHandler(oauthBindingSvc)
+	internalMembersHandler := handler.NewInternalMembersHandler(memberListSvc)
 
 	e := echo.New()
 	e.HideBanner = true
@@ -143,6 +145,7 @@ func NewEcho(cfg *config.Config, db *gorm.DB, redis *redisstore.Store) (*echo.Ec
 	v1.POST("/proposals/:id/comments", proposalHandler.CreateComment, middleware.JWT(jwtMgr))
 
 	internal := e.Group("/internal/v1", middleware.ServiceToken(cfg.Internal.ServiceToken))
+	internal.GET("/members", internalMembersHandler.List)
 	internal.GET("/feishu/bindings", internalFeishuHandler.LookupBinding)
 	internal.POST("/feishu/bindings/token", internalFeishuHandler.CreateBindToken)
 	internal.POST("/feishu/bindings/confirm", internalFeishuHandler.ConfirmBinding)
