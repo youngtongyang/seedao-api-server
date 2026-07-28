@@ -38,8 +38,10 @@ src/seedao-api-server.exe
 /data/
 /backups/
 
-# Large import data (regenerate via scripts)
+# Large import data (regenerate via scripts; do not commit)
+sns_chain_registry_import.sql
 src/migrations/data/sns_chain_registry_import.sql
+**/sns_chain_registry_import.sql
 
 # Local-only ops scripts (not synced to remote)
 src/scripts/delete-user-by-phone.sh
