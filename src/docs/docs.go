@@ -34,6 +34,59 @@ const docTemplate = `{
                 }
             }
         },
+        "/internal/v1/feishu/bindings": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "internal"
+                ],
+                "summary": "土地神按 open_id 查询飞书绑定状态",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "service token",
+                        "name": "X-Service-Token",
+                        "in": "header",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "飞书 open_id",
+                        "name": "open_id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "飞书 App ID，缺省用服务端配置",
+                        "name": "provider_app_id",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope"
+                        }
+                    }
+                }
+            }
+        },
         "/internal/v1/feishu/bindings/confirm": {
             "post": {
                 "consumes": [

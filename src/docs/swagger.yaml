@@ -449,6 +449,41 @@ paths:
       summary: 健康检查
       tags:
       - health
+  /internal/v1/feishu/bindings:
+    get:
+      parameters:
+      - description: service token
+        in: header
+        name: X-Service-Token
+        required: true
+        type: string
+      - description: 飞书 open_id
+        in: query
+        name: open_id
+        required: true
+        type: string
+      - description: 飞书 App ID，缺省用服务端配置
+        in: query
+        name: provider_app_id
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope'
+      summary: 土地神按 open_id 查询飞书绑定状态
+      tags:
+      - internal
   /internal/v1/feishu/bindings/confirm:
     post:
       consumes:
