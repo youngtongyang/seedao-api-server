@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"gorm.io/gorm"
@@ -133,6 +134,12 @@ func (s *PaymentService) CreateOrder(ctx context.Context, userID int64, input Cr
 		return nil, err
 	}
 
+	if existing, err := s.findReusablePendingMembershipOrder(userID, productType, days, payChannel, input.CouponCode); err != nil {
+		return nil, err
+	} else if existing != nil {
+		return toPaymentOrderView(existing, ""), nil
+	}
+
 	originalAmountFen := s.calcAmountFen(days)
 	finalAmountFen := originalAmountFen
 	var discountAmount int64
@@ -242,6 +249,33 @@ func (s *PaymentService) CreateOrder(ctx context.Context, userID int64, input Cr
 	}
 
 	return toPaymentOrderView(&order, ""), nil
+}
+
+func (s *PaymentService) findReusablePendingMembershipOrder(userID int64, productType string, days int, payChannel, couponCode string) (*model.PaymentOrder, error) {
+	now := time.Now()
+	q := s.db.Where(
+		"user_id = ? AND product_type = ? AND product_days = ? AND pay_channel = ? AND status = ? AND expired_at > ?",
+		userID, productType, days, payChannel, model.PaymentOrderStatusPending, now,
+	)
+	couponCode = strings.TrimSpace(couponCode)
+	if couponCode == "" {
+		q = q.Where("(coupon_code IS NULL OR coupon_code = '')")
+	} else {
+		q = q.Where("coupon_code = ?", couponCode)
+	}
+
+	var order model.PaymentOrder
+	err := q.Order("id DESC").First(&order).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	if order.CodeURL == nil || *order.CodeURL == "" {
+		return nil, nil
+	}
+	return &order, nil
 }
 
 func (s *PaymentService) couponReserveQuote(userID int64, productType string, days int, couponCode string, originalAmount int64) (int64, string, error) {
