@@ -7,6 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/seedao/seedao-api-server/internal/model"
 	"github.com/seedao/seedao-api-server/internal/pkg/errcode"
 	"github.com/seedao/seedao-api-server/internal/service"
 	"github.com/seedao/seedao-api-server/internal/testutil"
@@ -475,6 +476,50 @@ func TestPaymentCreateOrder(t *testing.T) {
 	assert.Equal(t, "pending", data["status"])
 	assert.NotEmpty(t, data["code_url"])
 	assert.Equal(t, float64(9900), data["amount"])
+}
+
+func TestPaymentCreateOrderReusesPending(t *testing.T) {
+	ts := testutil.NewTestServer(t)
+	token := registerAndGetToken(t, ts, "+8613900139025", "pay_reuse.seedao")
+	headers := map[string]string{"Authorization": "Bearer " + token}
+	body := map[string]interface{}{
+		"product_type": "membership_renew",
+		"pay_channel":  "alipay_h5",
+		"days":         365,
+	}
+
+	rec1 := testutil.DoJSON(t, ts.Echo, http.MethodPost, "/v1/payments/orders", body, headers)
+	data1 := testutil.ParseData[map[string]interface{}](t, testutil.ParseResponse(t, rec1).Data)
+	orderNo1 := data1["order_no"].(string)
+	require.NotEmpty(t, orderNo1)
+
+	rec2 := testutil.DoJSON(t, ts.Echo, http.MethodPost, "/v1/payments/orders", body, headers)
+	data2 := testutil.ParseData[map[string]interface{}](t, testutil.ParseResponse(t, rec2).Data)
+	assert.Equal(t, orderNo1, data2["order_no"])
+	assert.Equal(t, data1["pay_url"], data2["pay_url"])
+
+	var count int64
+	require.NoError(t, ts.DB.Model(&model.PaymentOrder{}).
+		Where("status = ?", model.PaymentOrderStatusPending).
+		Count(&count).Error)
+	assert.Equal(t, int64(1), count)
+}
+
+func TestPaymentCreateOrderDifferentChannelCreatesNew(t *testing.T) {
+	ts := testutil.NewTestServer(t)
+	token := registerAndGetToken(t, ts, "+8613900139026", "pay_ch_switch.seedao")
+	headers := map[string]string{"Authorization": "Bearer " + token}
+
+	rec1 := testutil.DoJSON(t, ts.Echo, http.MethodPost, "/v1/payments/orders", map[string]interface{}{
+		"pay_channel": "alipay_h5",
+	}, headers)
+	data1 := testutil.ParseData[map[string]interface{}](t, testutil.ParseResponse(t, rec1).Data)
+
+	rec2 := testutil.DoJSON(t, ts.Echo, http.MethodPost, "/v1/payments/orders", map[string]interface{}{
+		"pay_channel": "wechat_h5",
+	}, headers)
+	data2 := testutil.ParseData[map[string]interface{}](t, testutil.ParseResponse(t, rec2).Data)
+	assert.NotEqual(t, data1["order_no"], data2["order_no"])
 }
 
 func TestPaymentCreateOrderH5(t *testing.T) {
