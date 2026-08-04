@@ -7,6 +7,7 @@ require (
 	github.com/alibabacloud-go/dysmsapi-20170525/v4 v4.1.0
 	github.com/alibabacloud-go/tea v1.2.2
 	github.com/alicebob/miniredis/v2 v2.38.0
+	github.com/aliyun/aliyun-oss-go-sdk v3.0.2+incompatible
 	github.com/ethereum/go-ethereum v1.12.1
 	github.com/glebarez/sqlite v1.11.0
 	github.com/golang-jwt/jwt/v5 v5.2.1

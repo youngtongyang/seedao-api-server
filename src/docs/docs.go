@@ -1673,6 +1673,53 @@ const docTemplate = `{
                 }
             }
         },
+        "/v1/sns/profile": {
+            "get": {
+                "description": "按 sns_name 聚合 1.0 镜像表数据；图片优先返回 OSS 地址",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "sns"
+                ],
+                "summary": "获取成员社区资料（SEE/WANG/SCR/角色/SEED/SBT）",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "SNS 名称，如 baiyu.seedao",
+                        "name": "sns_name",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "allOf": [
+                                {
+                                    "$ref": "#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope"
+                                },
+                                {
+                                    "type": "object",
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/definitions/github_com_seedao_seedao-api-server_internal_service.MemberProfileResult"
+                                        }
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope"
+                        }
+                    }
+                }
+            }
+        },
         "/v1/stats/user-count": {
             "get": {
                 "produces": [
@@ -1991,6 +2038,128 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_seedao_seedao-api-server_internal_service.MemberAssetItem": {
+            "type": "object",
+            "properties": {
+                "asset_name": {
+                    "type": "string"
+                },
+                "claimed": {
+                    "type": "boolean"
+                },
+                "dealt_amount": {
+                    "type": "string"
+                },
+                "processing_amount": {
+                    "type": "string"
+                },
+                "source_create_ts": {
+                    "type": "integer"
+                }
+            }
+        },
+        "github_com_seedao_seedao-api-server_internal_service.MemberProfileResult": {
+            "type": "object",
+            "properties": {
+                "assets": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_seedao_seedao-api-server_internal_service.MemberAssetItem"
+                    }
+                },
+                "bio": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "mirror": {
+                    "type": "string"
+                },
+                "roles": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "sbts": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_seedao_seedao-api-server_internal_service.MemberSBTItem"
+                    }
+                },
+                "scr_amount": {
+                    "type": "string"
+                },
+                "see": {
+                    "$ref": "#/definitions/github_com_seedao_seedao-api-server_internal_service.MemberAssetItem"
+                },
+                "seeds": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/github_com_seedao_seedao-api-server_internal_service.MemberSeedItem"
+                    }
+                },
+                "sns_name": {
+                    "type": "string"
+                },
+                "twitter_profile": {
+                    "type": "string"
+                },
+                "wang": {
+                    "$ref": "#/definitions/github_com_seedao_seedao-api-server_internal_service.MemberAssetItem"
+                }
+            }
+        },
+        "github_com_seedao_seedao-api-server_internal_service.MemberSBTItem": {
+            "type": "object",
+            "properties": {
+                "collection_name": {
+                    "type": "string"
+                },
+                "contract_addr": {
+                    "type": "string"
+                },
+                "contract_type": {
+                    "type": "string"
+                },
+                "description": {
+                    "type": "string"
+                },
+                "display_name": {
+                    "type": "string"
+                },
+                "image_url": {
+                    "type": "string"
+                },
+                "token_amount": {
+                    "type": "string"
+                },
+                "token_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "github_com_seedao_seedao-api-server_internal_service.MemberSeedItem": {
+            "type": "object",
+            "properties": {
+                "contract_addr": {
+                    "type": "string"
+                },
+                "contract_type": {
+                    "type": "string"
+                },
+                "image_url": {
+                    "type": "string"
+                },
+                "token_amount": {
+                    "type": "string"
+                },
+                "token_id": {
                     "type": "string"
                 }
             }

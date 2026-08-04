@@ -55,3 +55,21 @@ feishu:
 
 internal:
   service_token: "dev-service-token-change-me"
+
+v1_import:
+  base_url: "https://api.seedao.top"
+  ipfs_gateway: "https://dweb.link/ipfs/"
+  concurrency: 3
+  page_size: 100
+  opensea_api_key: ""
+  opensea_base_url: "https://api.opensea.io"
+  opensea_chain: "ethereum"
+
+aliyun_oss:
+  endpoint: "oss-cn-hangzhou.aliyuncs.com"
+  bucket: ""
+  access_key_id: ""
+  access_key_secret: ""
+  public_base_url: ""
+  prefix: "import"
+

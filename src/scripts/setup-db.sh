@@ -107,6 +107,7 @@ run_psql "$PGDATABASE" "$PGUSER" "$PGPASSWORD" -f "$ROOT_DIR/migrations/007_prop
 run_psql "$PGDATABASE" "$PGUSER" "$PGPASSWORD" -f "$ROOT_DIR/migrations/008_proposal_sip.sql"
 run_psql "$PGDATABASE" "$PGUSER" "$PGPASSWORD" -f "$ROOT_DIR/migrations/009_proposal_sip_alloc.sql"
 run_psql "$PGDATABASE" "$PGUSER" "$PGPASSWORD" -f "$ROOT_DIR/migrations/010_user_oauth_bindings.sql"
+run_psql "$PGDATABASE" "$PGUSER" "$PGPASSWORD" -f "$ROOT_DIR/migrations/011_legacy_import.sql"
 
 echo "==> Step 3: import sns_chain_registry"
 PREPARED="$ROOT_DIR/migrations/data/sns_chain_registry_import.sql"

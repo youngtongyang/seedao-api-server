@@ -76,3 +76,23 @@ feishu:
 
 internal:
   service_token: "local-dev-service-token-change-me"
+
+# 1.0 数据导入（cmd/v1import）；OSS 可后跑
+v1_import:
+  base_url: "https://api.seedao.top"
+  ipfs_gateway: "https://dweb.link/ipfs/"
+  concurrency: 3
+  page_size: 100
+  opensea_api_key: ""          # 配置后 oss 回填直接走 OpenSea（contract+token_id）
+  opensea_base_url: "https://api.opensea.io"
+  opensea_chain: "ethereum"
+
+aliyun_oss:
+  endpoint: "oss-cn-hangzhou.aliyuncs.com"
+  region: "cn-hangzhou"   # 可选；不填则从 endpoint 推断
+  bucket: ""
+  access_key_id: ""
+  access_key_secret: ""
+  public_base_url: ""
+  prefix: "img"
+
