@@ -10,6 +10,86 @@ definitions:
       message:
         type: string
     type: object
+  github_com_seedao_seedao-api-server_internal_service.MemberAssetItem:
+    properties:
+      asset_name:
+        type: string
+      claimed:
+        type: boolean
+      dealt_amount:
+        type: string
+      processing_amount:
+        type: string
+      source_create_ts:
+        type: integer
+    type: object
+  github_com_seedao_seedao-api-server_internal_service.MemberProfileResult:
+    properties:
+      assets:
+        items:
+          $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_service.MemberAssetItem'
+        type: array
+      bio:
+        type: string
+      email:
+        type: string
+      mirror:
+        type: string
+      roles:
+        items:
+          type: string
+        type: array
+      sbts:
+        items:
+          $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_service.MemberSBTItem'
+        type: array
+      scr_amount:
+        type: string
+      see:
+        $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_service.MemberAssetItem'
+      seeds:
+        items:
+          $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_service.MemberSeedItem'
+        type: array
+      sns_name:
+        type: string
+      twitter_profile:
+        type: string
+      wang:
+        $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_service.MemberAssetItem'
+    type: object
+  github_com_seedao_seedao-api-server_internal_service.MemberSBTItem:
+    properties:
+      collection_name:
+        type: string
+      contract_addr:
+        type: string
+      contract_type:
+        type: string
+      description:
+        type: string
+      display_name:
+        type: string
+      image_url:
+        type: string
+      token_amount:
+        type: string
+      token_id:
+        type: string
+    type: object
+  github_com_seedao_seedao-api-server_internal_service.MemberSeedItem:
+    properties:
+      contract_addr:
+        type: string
+      contract_type:
+        type: string
+      image_url:
+        type: string
+      token_amount:
+        type: string
+      token_id:
+        type: string
+    type: object
   github_com_seedao_seedao-api-server_internal_service.ProposalCommentItem:
     properties:
       author_wallet:
@@ -1452,6 +1532,34 @@ paths:
           schema:
             $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope'
       summary: 检查 SNS 名称是否可用
+      tags:
+      - sns
+  /v1/sns/profile:
+    get:
+      description: 按 sns_name 聚合 1.0 镜像表数据；图片优先返回 OSS 地址
+      parameters:
+      - description: SNS 名称，如 baiyu.seedao
+        in: query
+        name: sns_name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            allOf:
+            - $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope'
+            - properties:
+                data:
+                  $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_service.MemberProfileResult'
+              type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/github_com_seedao_seedao-api-server_internal_pkg_response.Envelope'
+      summary: 获取成员社区资料（SEE/WANG/SCR/角色/SEED/SBT）
       tags:
       - sns
   /v1/stats/user-count:

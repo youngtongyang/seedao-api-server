@@ -34,7 +34,7 @@ const (
 	FeishuAlreadyBound       = 40041
 	FeishuOpenIDTaken        = 40042
 	FeishuBindCredentialInvalid = 40043
-	InternalError       = 50000
+	InternalError               = 50000
 )
 
 var messages = map[int]string{
@@ -71,7 +71,7 @@ var messages = map[int]string{
 	FeishuAlreadyBound:       "feishu already bound",
 	FeishuOpenIDTaken:        "feishu account already bound to another user",
 	FeishuBindCredentialInvalid: "feishu bind token or code invalid or expired",
-	InternalError:      "internal server error",
+	InternalError:               "internal server error",
 }
 
 func Message(code int) string {

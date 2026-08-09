@@ -13,6 +13,7 @@ type Config struct {
 	Redis      RedisConfig      `yaml:"redis"`
 	JWT        JWTConfig        `yaml:"jwt"`
 	AliyunSMS  AliyunSMSConfig  `yaml:"aliyun_sms"`
+	AliyunOSS  AliyunOSSConfig  `yaml:"aliyun_oss"`
 	SIWE       SIWEConfig       `yaml:"siwe"`
 	Membership MembershipConfig `yaml:"membership"`
 	WechatPay  WechatPayConfig  `yaml:"wechat_pay"`
@@ -20,6 +21,7 @@ type Config struct {
 	Governance GovernanceConfig `yaml:"governance"`
 	Feishu     FeishuConfig     `yaml:"feishu"`
 	Internal   InternalConfig   `yaml:"internal"`
+	V1Import   V1ImportConfig   `yaml:"v1_import"`
 }
 
 type ServerConfig struct {
@@ -48,6 +50,26 @@ type AliyunSMSConfig struct {
 	SignName        string `yaml:"sign_name"`
 	TemplateCode    string `yaml:"template_code"`
 	DevMode         bool   `yaml:"dev_mode"`
+}
+
+type AliyunOSSConfig struct {
+	Endpoint        string `yaml:"endpoint"`
+	Region          string `yaml:"region"` // e.g. cn-heyuan; optional if derivable from endpoint
+	Bucket          string `yaml:"bucket"`
+	AccessKeyID     string `yaml:"access_key_id"`
+	AccessKeySecret string `yaml:"access_key_secret"`
+	PublicBaseURL   string `yaml:"public_base_url"`
+	Prefix          string `yaml:"prefix"`
+}
+
+type V1ImportConfig struct {
+	BaseURL       string `yaml:"base_url"`
+	IPFSGateway   string `yaml:"ipfs_gateway"`
+	Concurrency   int    `yaml:"concurrency"`
+	PageSize      int    `yaml:"page_size"`
+	OpenSeaAPIKey string `yaml:"opensea_api_key"`
+	OpenSeaBaseURL string `yaml:"opensea_base_url"`
+	OpenSeaChain  string `yaml:"opensea_chain"` // e.g. ethereum
 }
 
 type SIWEConfig struct {
@@ -165,6 +187,27 @@ func Load(path string) (*Config, error) {
 	}
 	if cfg.Feishu.BindURLTemplate == "" {
 		cfg.Feishu.BindURLTemplate = "https://www.seedao.xyz/profile/bind?token={token}"
+	}
+	if cfg.V1Import.BaseURL == "" {
+		cfg.V1Import.BaseURL = "https://api.seedao.top"
+	}
+	if cfg.V1Import.IPFSGateway == "" {
+		cfg.V1Import.IPFSGateway = "https://dweb.link/ipfs/"
+	}
+	if cfg.V1Import.Concurrency <= 0 {
+		cfg.V1Import.Concurrency = 3
+	}
+	if cfg.V1Import.PageSize <= 0 {
+		cfg.V1Import.PageSize = 100
+	}
+	if cfg.V1Import.OpenSeaBaseURL == "" {
+		cfg.V1Import.OpenSeaBaseURL = "https://api.opensea.io"
+	}
+	if cfg.V1Import.OpenSeaChain == "" {
+		cfg.V1Import.OpenSeaChain = "ethereum"
+	}
+	if cfg.AliyunOSS.Prefix == "" {
+		cfg.AliyunOSS.Prefix = "import"
 	}
 
 	return &cfg, nil
