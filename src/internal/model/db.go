@@ -2,12 +2,15 @@ package model
 
 import (
 	"fmt"
+	"sync/atomic"
 
 	"github.com/glebarez/sqlite"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 )
+
+var sqliteMemDBSeq atomic.Uint64
 
 func NewDB(dsn string) (*gorm.DB, error) {
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
@@ -21,8 +24,9 @@ func NewDB(dsn string) (*gorm.DB, error) {
 
 func NewSQLiteDB(dsn string) (*gorm.DB, error) {
 	if dsn == "" || dsn == ":memory:" {
-		// Shared in-memory DB so concurrent pool connections see the same schema/data.
-		dsn = "file::memory:?cache=shared"
+		// Unique name per call so tests stay isolated; cache=shared + MaxOpenConns(1)
+		// lets concurrent queries in one process see the same schema/data.
+		dsn = fmt.Sprintf("file:memdb-%d?mode=memory&cache=shared", sqliteMemDBSeq.Add(1))
 	}
 	db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Warn),
