@@ -375,6 +375,45 @@ func TestStatsUserCount(t *testing.T) {
 	assert.Equal(t, int64(3), data["total_user_count"])
 }
 
+func TestStatsUserCount_ExcludesTestAccounts(t *testing.T) {
+	ts := testutil.NewTestServer(t)
+	ts.SeedRegistry(t, "0x8c913aec7443fe2018639133398955e0e17fb0c1", "legacy_one.seedao")
+
+	rec := testutil.DoJSON(t, ts.Echo, http.MethodPost, "/v1/auth/register", map[string]string{
+		"phone":         "+8619900000098",
+		"code":          "000000",
+		"register_type": "new_sns",
+		"sns_name":      "previewqa98.seedao",
+	}, nil)
+	require.Equal(t, http.StatusOK, rec.Code)
+
+	countRec := testutil.DoJSON(t, ts.Echo, http.MethodGet, "/v1/stats/user-count", nil, nil)
+	data := testutil.ParseData[map[string]int64](t, testutil.ParseResponse(t, countRec).Data)
+	assert.Equal(t, int64(1), data["total_user_count"])
+}
+
+func TestLogin_DevFixedCodeWithoutSend(t *testing.T) {
+	ts := testutil.NewTestServer(t)
+
+	reg := testutil.DoJSON(t, ts.Echo, http.MethodPost, "/v1/auth/register", map[string]string{
+		"phone":         "+8619900000099",
+		"code":          "000000",
+		"register_type": "new_sns",
+		"sns_name":      "previewqa99.seedao",
+	}, nil)
+	require.Equal(t, http.StatusOK, reg.Code)
+
+	login := testutil.DoJSON(t, ts.Echo, http.MethodPost, "/v1/auth/login", map[string]string{
+		"phone": "+8619900000099",
+		"code":  "000000",
+	}, nil)
+	require.Equal(t, http.StatusOK, login.Code)
+	loginData := testutil.ParseData[map[string]interface{}](t, testutil.ParseResponse(t, login).Data)
+	assert.NotEmpty(t, loginData["token"])
+	user := loginData["user"].(map[string]interface{})
+	assert.Equal(t, "previewqa99.seedao", user["sns_name"])
+}
+
 func TestRegisterNewSNS_NoMembershipUntilPaid(t *testing.T) {
 	ts := testutil.NewTestServer(t)
 	phoneNum := "+8613900139012"

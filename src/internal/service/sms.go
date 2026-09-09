@@ -21,16 +21,18 @@ const (
 	smsPhoneRateTTL = 60 * time.Second
 	smsIPRateTTL    = time.Hour
 	smsIPRateLimit  = 20
+	SMSDevFixedCode = "000000"
 )
 
 type SMSService struct {
-	db     *gorm.DB
-	redis  *redisstore.Store
-	sender aliyunsms.Sender
+	db      *gorm.DB
+	redis   *redisstore.Store
+	sender  aliyunsms.Sender
+	devMode bool
 }
 
-func NewSMSService(db *gorm.DB, redis *redisstore.Store, sender aliyunsms.Sender) *SMSService {
-	return &SMSService{db: db, redis: redis, sender: sender}
+func NewSMSService(db *gorm.DB, redis *redisstore.Store, sender aliyunsms.Sender, devMode bool) *SMSService {
+	return &SMSService{db: db, redis: redis, sender: sender, devMode: devMode}
 }
 
 type SendSMSResult struct {
@@ -60,9 +62,13 @@ func (s *SMSService) Send(ctx context.Context, phoneNum, ip string) (*SendSMSRes
 		return nil, s.ipRateLimitError(ctx, ip)
 	}
 
-	code, err := generateSMSCode()
-	if err != nil {
-		return nil, err
+	code := SMSDevFixedCode
+	if !s.devMode {
+		generated, err := generateSMSCode()
+		if err != nil {
+			return nil, err
+		}
+		code = generated
 	}
 
 	if err := s.sender.Send(phoneNum, code); err != nil {
@@ -113,6 +119,10 @@ func retryAfterSeconds(ttl time.Duration, fallback int) int {
 func (s *SMSService) ValidateCode(ctx context.Context, phoneNum, code string) error {
 	if err := phone.Validate(phoneNum); err != nil {
 		return ErrInvalidParam
+	}
+
+	if s.devMode && code == SMSDevFixedCode {
+		return nil
 	}
 
 	phoneHash := phone.Hash(phoneNum)

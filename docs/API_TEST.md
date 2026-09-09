@@ -94,7 +94,7 @@ curl -X POST http://127.0.0.1:8080/v1/auth/sms/send \
 - 同号 60 秒内不可重复发送
 - 同 IP 每小时最多 20 次
 - 成功响应 `data.retry_after` 为 60；**429 限流时同样返回 `data.retry_after`（剩余秒数）**，前端应展示倒计时而非「发送失败」
-- `dev_mode: true` 时验证码打在 API 日志；`false` 时真实发短信
+- `dev_mode: true` 时**不发真短信**，验证码固定 **`000000`**（无需先调 send）；`false` 时真实发短信
 
 429 示例：
 

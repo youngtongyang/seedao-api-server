@@ -77,6 +77,7 @@ type User struct {
 	Avatar              string         `gorm:"size:512"`
 	Bio                 string         `gorm:"type:text"`
 	MembershipExpiresAt *time.Time     `gorm:"index"`
+	IsTest              bool           `gorm:"column:is_test;not null;default:false;index"`
 	CreatedAt           time.Time      `gorm:"not null"`
 	UpdatedAt           time.Time      `gorm:"not null"`
 	DeletedAt           gorm.DeletedAt `gorm:"index"`

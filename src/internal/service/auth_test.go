@@ -44,7 +44,7 @@ func newAuthTestService(t *testing.T) (*AuthService, *gorm.DB, *redisstore.Store
 	defer cancel()
 	require.NoError(t, redis.Ping(ctx))
 
-	sms := NewSMSService(db, redis, nil)
+	sms := NewSMSService(db, redis, nil, true)
 	sns := NewSNSService(db, redis)
 	wallet := NewWalletService(redis, config.SIWEConfig{ChainID: 1})
 	jwtMgr := jwtutil.NewManager("test-secret", 24)

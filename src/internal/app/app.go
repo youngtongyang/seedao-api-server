@@ -57,7 +57,7 @@ func NewEcho(cfg *config.Config, db *gorm.DB, redis *redisstore.Store) (*echo.Ec
 		return nil, err
 	}
 
-	smsSvc := service.NewSMSService(db, redis, smsSender)
+	smsSvc := service.NewSMSService(db, redis, smsSender, cfg.AliyunSMS.DevMode)
 	snsSvc := service.NewSNSService(db, redis)
 	walletSvc := service.NewWalletService(redis, cfg.SIWE)
 	authSvc := service.NewAuthService(db, smsSvc, snsSvc, walletSvc, jwtMgr)

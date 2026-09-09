@@ -8,7 +8,17 @@ import (
 	"strings"
 )
 
+const (
+	// TestPhonePrefix marks preview/QA numbers that share the production DB.
+	// Stats and other production counts must exclude these accounts.
+	TestPhonePrefix = "+8619900000"
+)
+
 var e164Pattern = regexp.MustCompile(`^\+[1-9]\d{6,14}$`)
+
+func IsTestPhone(phone string) bool {
+	return strings.HasPrefix(phone, TestPhonePrefix)
+}
 
 func Validate(phone string) error {
 	if !e164Pattern.MatchString(phone) {

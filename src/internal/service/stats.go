@@ -26,7 +26,7 @@ func (s *StatsService) GetUserCount() (*UserCountResult, error) {
 
 	var newSNSUserCount int64
 	if err := s.db.Model(&model.User{}).
-		Where("register_source = ?", model.RegisterSourceNewSNS).
+		Where("register_source = ? AND is_test = ?", model.RegisterSourceNewSNS, false).
 		Count(&newSNSUserCount).Error; err != nil {
 		return nil, err
 	}

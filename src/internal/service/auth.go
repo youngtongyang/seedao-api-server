@@ -136,6 +136,7 @@ func (s *AuthService) RegisterNewSNS(ctx context.Context, input RegisterNewSNSIn
 		user = model.User{
 			RegisterSource: model.RegisterSourceNewSNS,
 			Status:         model.UserStatusActive,
+			IsTest:         phone.IsTestPhone(input.Phone),
 			// MembershipExpiresAt stays nil until payment succeeds.
 			CreatedAt: now,
 			UpdatedAt: now,
@@ -217,6 +218,7 @@ func (s *AuthService) RegisterExistingSNS(ctx context.Context, input RegisterExi
 		user = model.User{
 			RegisterSource:      model.RegisterSourceExistingSNS,
 			Status:              model.UserStatusActive,
+			IsTest:              phone.IsTestPhone(input.Phone),
 			MembershipExpiresAt: &expiresAt,
 			CreatedAt:           now,
 			UpdatedAt:           now,
