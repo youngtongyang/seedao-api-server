@@ -4,6 +4,10 @@ SeeDAO 2.0 用户认证与 SNS 服务 API（v2.7）。
 
 面向 Web / H5 客户端，提供手机号验证码注册/登录、SNS 名称校验与预留、老用户钱包认领链上 SNS、个人 Profile、飞书账号绑定（土地神）、首页用户统计、会员微信支付、课程售卖、治理提案等能力。运行时零链上 RPC 依赖。
 
+> 本仓库是 SeeDAO 2.0 API 的公开代码快照，便于阅读与本地开发。生产环境的部署与运维文档不在本仓库中。
+>
+> This is a public source snapshot of the SeeDAO 2.0 API for reading and local development. Production deployment and operations docs are not included.
+
 ## 项目结构
 
 ```
@@ -32,10 +36,7 @@ seedao-api-server/
 │   ├── go.mod
 │   └── go.sum
 ├── docker-compose.dev.yml      # 开发环境（postgres + redis + api）
-├── docker-compose.prod.yml     # 生产环境（redis + api）
 ├── docs/
-│   ├── DEPLOYMENT.md          # 部署步骤说明
-│   ├── OPERATIONS.md          # 运维操作手册（发版、备份、排错、删用户等）
 │   ├── API_CHANGELOG.md       # 版本变更一览
 │   ├── API_PAYMENTS_v2.6.md   # v2.6 支付/课程业务说明
 │   ├── API_GOVERNANCE.md      # v2.7 治理/提案（含内部配置）
@@ -171,21 +172,16 @@ go run ./cmd/server
 
 或一键：`bash src/scripts/start-local.sh`
 
-### 4. Docker 部署
+### 4. Docker（本地开发）
 
 ```bash
 # 开发环境（postgres + redis + api）
 cp src/config/config.dev.example.yaml src/config/config.dev.yaml
 # 编辑 config.dev.yaml，填写 redis.password 等配置
 docker compose -f docker-compose.dev.yml up -d --build
-
-# 生产环境（推荐 .env 配置 SEEDAO_IMAGE 为阿里云 ACR，见 docs/DEPLOYMENT.md 三-A）
-cp src/config/config.prod.example.yaml src/config/config.prod.yaml
-docker compose -f docker-compose.prod.yml up -d
-# 更新：bash deploy/pull-deploy.sh
 ```
 
-**阿里云 ECS 生产部署完整步骤**见 [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) 第一章；**日常运维**见 [docs/OPERATIONS.md](docs/OPERATIONS.md)。
+生产环境的部署与运维文档不在本公开仓库中。
 
 ---
 

@@ -619,7 +619,7 @@ curl -X POST http://127.0.0.1:8080/v1/payments/orders \
 
 > 接口说明：[API_PAYMENTS_v2.6.md § 二、课程售卖](API_PAYMENTS_v2.6.md#二课程售卖)
 
-**前置：** 库中已有课程配置（`courses` / `course_skus` / `course_discount_rules`）。本地可先执行 `setup-db.sh` 后手动 INSERT，或参考 [OPERATIONS.md § 十二](OPERATIONS.md#十二优惠券与课程数据配置)。
+**前置：** 库中已有课程配置（`courses` / `course_skus` / `course_discount_rules`）。本地可先执行 `setup-db.sh` 后手动 INSERT。
 
 ### 21. 价格试算（JWT 可选）
 
